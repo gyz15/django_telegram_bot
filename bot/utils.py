@@ -1,5 +1,6 @@
 import urllib
 from os import environ
+import json
 import requests
 from decouple import config
 
@@ -21,8 +22,29 @@ def get_url(url):
 
 def is_command(rawdata):
     try:
-        print(rawdata['message']['entities'][0]['type'])
+        a = rawdata['message']['entities'][0]['type']
         return True
     except Exception as e:
         print(e)
     return False
+
+
+def is_start(rawdata):
+    try:
+        start = rawdata['message']['text']
+        return start == "/start"
+    except:
+        return False
+
+
+def send_where_to_go(current_user):
+    actions_list = []
+    actions_can_be_done = current_user.current_location.action_can_be_taken.all()
+    for action_obj in actions_can_be_done:
+        actions_list.append([f'{action_obj.action_name}'])
+    actions_list = json.dumps(actions_list)
+    text = urllib.parse.quote_plus("Choose where do you want to go")
+    url = URL + \
+        f'sendMessage?chat_id={current_user.tg_id}&text={text}&reply_markup={{"keyboard":{actions_list},"one_time_keyboard":true,"force_reply":true}}'
+    print(url)
+    get_url(url)

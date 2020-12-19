@@ -5,6 +5,7 @@ from django.contrib.auth.models import User, Group
 
 admin.site.unregister(Group)
 admin.site.unregister(User)
+# todo set user all field readonly
 admin.site.register(TGUser)
 admin.site.register(Location)
 admin.site.register(Action)
