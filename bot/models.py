@@ -1,3 +1,23 @@
 from django.db import models
 
 # Create your models here.
+
+
+class TGUser(models.Model):
+    first_name = models.CharField(max_length=1024)
+    last_name = models.CharField(max_length=1024)
+    tg_id = models.IntegerField()
+    email = models.EmailField(max_length=254, blank=True)
+    current_location = models.ForeignKey(
+        'bot.Location', on_delete=models.SET_DEFAULT, default=1)
+    current_action = models.ForeignKey(
+        'bot.Action', on_delete=models.CASCADE, blank=True)
+
+
+class Location(models.Model):
+    name = models.CharField(max_length=1024)
+    action_can_be_taken = models.ManyToManyField('bot.Action')
+
+
+class Action(models.Model):
+    action_name = models.CharField(max_length=1024)
