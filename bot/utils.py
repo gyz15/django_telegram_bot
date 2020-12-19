@@ -17,3 +17,12 @@ def get_url(url):
     response = requests.get(url)
     content = response.content.decode("utf8")
     return content
+
+
+def is_command(rawdata):
+    try:
+        print(rawdata['message']['entities'][0]['type'])
+        return True
+    except Exception as e:
+        print(e)
+    return False
