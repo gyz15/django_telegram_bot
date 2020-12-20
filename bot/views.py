@@ -28,15 +28,16 @@ def main(request):
                 # todo handle message if user has current_action
                 pass
             else:
-                # todo check message is text or not
                 if message_is_text(data):
-                    # is user sending a valid text command?
                     action = current_user.current_location.action_can_be_taken.filter(
                         action_name=get_text(data))
                     if len(action) == 1:
+                        # todo carry out user action
                         pass
                     else:
-                        send_message("sorry i can't get it", user_id)
+                        send_message("Sorry I can't get it", user_id)
+                else:
+                    send_message("Sorry I'm unable to handle this", user_id)
 
             send_where_to_go(current_user)
 

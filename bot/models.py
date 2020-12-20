@@ -1,5 +1,6 @@
 from django.db import models
 from .choice import ACTION_TYPE_CHOICES
+from django.forms import ValidationError
 
 # Create your models here.
 
@@ -17,6 +18,10 @@ class TGUser(models.Model):
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
 
+    @property
+    def full_name(self):
+        return f"{self.first_name} {self.last_name}"
+
 
 class Location(models.Model):
     name = models.CharField(max_length=1024)
@@ -29,8 +34,6 @@ class Location(models.Model):
 class Action(models.Model):
     action_name = models.CharField(max_length=1024, unique=True)
     action_type = models.CharField(max_length=2, choices=ACTION_TYPE_CHOICES)
-    # todo attribute add to_location(foreignkey?) if action type =='go'
-    # todo validation action wih type "AC" can be add in user current action but not "GO"
     go_to = models.ForeignKey(
         'bot.Location', blank=True, on_delete=models.SET_NULL, null=True)
 
