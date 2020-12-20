@@ -14,6 +14,7 @@ def main(request):
             # identify message type
             print(data)
             current_user = get_user_or_create(data)
+            user_id = current_user.tg_id
             # todo handle user send de qiqiguaiguai things
             # todo get user got current_action
             # if yes, try accepting other than text message
@@ -29,12 +30,13 @@ def main(request):
             else:
                 # todo check message is text or not
                 if message_is_text(data):
-                    try:
-                        action = current_user.current_location.action_can_be_taken.filter(
-                            aciton_name=get_text(data))
-                    except Action.DoesNotExist:
-                        # todo send back user i don't get it
+                    # is user sending a valid text command?
+                    action = current_user.current_location.action_can_be_taken.filter(
+                        action_name=get_text(data))
+                    if len(action) == 1:
                         pass
+                    else:
+                        send_message("sorry i can't get it", user_id)
 
             send_where_to_go(current_user)
 
