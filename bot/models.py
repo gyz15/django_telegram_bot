@@ -36,6 +36,7 @@ class Action(models.Model):
     action_type = models.CharField(max_length=2, choices=ACTION_TYPE_CHOICES)
     go_to = models.ForeignKey(
         'bot.Location', blank=True, on_delete=models.SET_NULL, null=True)
+    # todo order button (set position)
 
     def __str__(self):
         return f'{self.action_name}'

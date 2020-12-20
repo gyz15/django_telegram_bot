@@ -33,7 +33,10 @@ def main(request):
                         action_name=get_text(data))
                     if len(action) == 1:
                         # todo carry out user action
-                        pass
+                        action = action[0]
+                        if action.action_type == "GO":
+                            current_user.current_location = action.go_to
+                            current_user.save()
                     else:
                         send_message("Sorry I can't get it", user_id)
                 else:
