@@ -3,6 +3,7 @@ from os import environ
 import json
 import requests
 from decouple import config
+from .models import TGUser
 
 TOKEN = config('TOKEN')
 URL = f"https://api.telegram.org/bot{TOKEN}/"
@@ -20,21 +21,12 @@ def get_url(url):
     return content
 
 
-def is_command(rawdata):
+def get_text(rawdata):
     try:
-        a = rawdata['message']['entities'][0]['type']
-        return True
+        return rawdata['message']['text']
     except Exception as e:
         print(e)
-    return False
-
-
-def is_start(rawdata):
-    try:
-        start = rawdata['message']['text']
-        return start == "/start"
-    except:
-        return False
+        return ''
 
 
 def send_where_to_go(current_user):
@@ -46,5 +38,35 @@ def send_where_to_go(current_user):
     text = urllib.parse.quote_plus("Choose where do you want to go")
     url = URL + \
         f'sendMessage?chat_id={current_user.tg_id}&text={text}&reply_markup={{"keyboard":{actions_list},"one_time_keyboard":true,"force_reply":true}}'
-    print(url)
     get_url(url)
+
+
+def message_is_text(rawdata):
+    try:
+        text = rawdata['message']
+        keylist = list(text)
+        return 'text' in keylist
+    except:
+        # might be callback_query
+        return False
+
+
+def get_user_or_create(rawdata):
+    '''Do some checking on database, create user if necesarry'''
+    try:
+        first_name = rawdata['message']['chat']['first_name']
+        last_name = rawdata['message']['chat']['last_name']
+        chat_id = rawdata['message']['chat']['id']
+        current_user = TGUser.objects.get(tg_id=chat_id)
+        if first_name != current_user.first_name or last_name != current_user.last_name:
+            current_user.first_name = first_name
+            current_user.last_name = last_name
+            current_user.save()
+        return current_user
+    except TGUser.DoesNotExist:
+        current_user = TGUser.objects.create(
+            tg_id=chat_id, first_name=first_name, last_name=last_name)
+        current_user.save()
+        send_message(
+            f"Welcome {current_user.first_name}. I'm a bot. But currently i'm not available", chat_id)
+        return current_user

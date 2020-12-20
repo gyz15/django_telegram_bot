@@ -1,4 +1,5 @@
 from django.db import models
+from .choice import ACTION_TYPE_CHOICES
 
 # Create your models here.
 
@@ -27,6 +28,9 @@ class Location(models.Model):
 
 class Action(models.Model):
     action_name = models.CharField(max_length=1024)
+    action_type = models.CharField(max_length=2, choices=ACTION_TYPE_CHOICES)
+    # todo attribute add to_location(foreignkey?) if action type =='go'
+    # todo validation action wih type "AC" can be add in user current action but not "GO"
 
     def __str__(self):
         return f'{self.action_name}'
