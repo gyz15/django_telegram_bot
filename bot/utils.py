@@ -70,3 +70,44 @@ def get_user_or_create(rawdata):
         send_message(
             f"Welcome {current_user.first_name}. I'm a bot. But currently i'm not available", chat_id)
         return current_user
+
+
+def carry_out_action(current_user, action_obj):
+    if action_obj.action_name == "Shout at Me":
+        current_user.current_action = action_obj
+        current_user.save()
+        send_message(
+            "Okay, enter some word. Enter stop to end this section.", current_user.tg_id)
+    else:
+        send_message(
+            "Sorry, this function is not done yet. Stay Tuned.", current_user.tg_id)
+        current_user.current_action = None
+        current_user.save()
+        send_where_to_go(current_user)
+
+
+def carrying_action(current_user, current_action, data):
+    if message_is_text(data):
+        # stop message needs to be text, if user not sending text sure not stopping the things
+        if get_text(data).upper() == current_action.end_action_code.upper():
+            current_user.current_action = None
+            current_user.save()
+            send_where_to_go(current_user)
+        else:
+            if current_action.action_name == "Shout at Me":
+                words = get_text(data).upper()
+                send_message(f"{words}", current_user.tg_id)
+    else:
+        if current_action.action_name == "Shout at Me":
+            send_message(
+                "Looks like I can't shout you what you're saying", current_user.tg_id)
+        else:
+            current_user.current_action = None
+            current_user.save()
+            send_message(
+                "Sorry, this function is not done yet. Stay Tuned.", current_user.tg_id)
+            send_where_to_go(current_user)
+
+
+def stop_action(current_user, action_obj):
+    pass

@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.http import JsonResponse
 import json
-from .utils import send_message, send_where_to_go, get_user_or_create, message_is_text, get_text
+from .utils import send_message, send_where_to_go, get_user_or_create, message_is_text, get_text, carry_out_action, carrying_action
 from .models import TGUser, Action
 
 # Create your views here.
@@ -26,7 +26,11 @@ def main(request):
             # if no, return user error message
             if current_user.current_action is not None:
                 # todo handle message if user has current_action
-                pass
+                # todo is message a end word?
+                # if not, continue action
+                carrying_action(
+                    current_user, current_user.current_action, data)
+
             else:
                 if message_is_text(data):
                     action = current_user.current_location.action_can_be_taken.filter(
@@ -37,12 +41,18 @@ def main(request):
                         if action.action_type == "GO":
                             current_user.current_location = action.go_to
                             current_user.save()
+                            send_where_to_go(current_user)
+                        elif action.action_type == "AC":
+                            carry_out_action(current_user, action)
+                            # todo how to carry out user action differentiate by the name of action??
+                        else:
+                            print("Strange action by user")
                     else:
                         send_message("Sorry I can't get it", user_id)
+                        send_where_to_go(current_user)
                 else:
                     send_message("Sorry I'm unable to handle this", user_id)
-
-            send_where_to_go(current_user)
+                    send_where_to_go(current_user)
 
             # todo handle user next conver
         except Exception as e:
