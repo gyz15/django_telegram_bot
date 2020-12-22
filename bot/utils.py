@@ -78,15 +78,19 @@ def carry_out_action(current_user, action_obj):
         current_user.current_location = action_obj.go_to
         stop_action(current_user)
     elif action_obj.action_type == "AC":
+        current_user.current_action = action_obj
         if action_obj.action_name == "Shout at Me":
-            current_user.current_action = action_obj
-            current_user.save()
             send_message(
                 "Okay, enter some word. Enter stop to end this section.", current_user.tg_id)
+        elif action_obj.action_name == "Find Stock Data":
+            send_message(
+                "Okay, enter a stock symbol.", current_user.tg_id)
         else:
             send_message(
                 "Sorry, this function is not done yet. Stay Tuned.", current_user.tg_id)
+            current_user.current_action = None
             stop_action(current_user)
+        current_user.save()
     else:
         print("Strange action by user")
 
@@ -97,15 +101,23 @@ def carrying_action(current_user, current_action, data):
         if get_text(data).upper() == current_action.end_action_code.upper():
             stop_action(current_user)
         else:
+            # proper message handling
+            words = get_text(data)
             if current_action.action_name == "Shout at Me":
-                words = get_text(data)
                 try:
                     action_obj = current_user.current_location.action_can_be_taken.get(
                         action_name=words)
                     carry_out_action(current_user, action_obj)
                 except Action.DoesNotExist:
                     send_message(f"{words.upper()}", current_user.tg_id)
+            elif current_action.action_name == "Find Stock Data":
+                find_stocks(words.upper(), current_user)
+            else:
+                send_message(
+                    "Sorry, this function is not done yet. Stay Tuned.", current_user.tg_id)
+                stop_action(current_user)
     else:
+        # unproper message handling
         if current_action.action_name == "Shout at Me":
             send_message(
                 "Looks like I can't shout you what you're saying", current_user.tg_id)
@@ -119,3 +131,10 @@ def stop_action(current_user):
     current_user.current_action = None
     current_user.save()
     send_where_to_go(current_user)
+
+
+def find_stocks(symbol, current_user):
+    # validation for symbol before checking to prevent wastage of api
+    if len(symbol) <= 5 and symbol.isalpha():
+        # todo stock check after validation
+        pass
