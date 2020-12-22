@@ -36,17 +36,8 @@ def main(request):
                     action = current_user.current_location.action_can_be_taken.filter(
                         action_name=get_text(data))
                     if len(action) == 1:
-                        # todo carry out user action
                         action = action[0]
-                        if action.action_type == "GO":
-                            current_user.current_location = action.go_to
-                            current_user.save()
-                            send_where_to_go(current_user)
-                        elif action.action_type == "AC":
-                            carry_out_action(current_user, action)
-                            # todo how to carry out user action differentiate by the name of action??
-                        else:
-                            print("Strange action by user")
+                        carry_out_action(current_user, action)
                     else:
                         send_message("Sorry I can't get it", user_id)
                         send_where_to_go(current_user)

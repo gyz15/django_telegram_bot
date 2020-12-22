@@ -3,9 +3,10 @@ from os import environ
 import json
 import requests
 from decouple import config
-from .models import TGUser
+from .models import TGUser, Action
 
 TOKEN = config('TOKEN')
+API_KEY = config('ALPHAVANTAGE_API_KEY')
 URL = f"https://api.telegram.org/bot{TOKEN}/"
 
 
@@ -73,41 +74,48 @@ def get_user_or_create(rawdata):
 
 
 def carry_out_action(current_user, action_obj):
-    if action_obj.action_name == "Shout at Me":
-        current_user.current_action = action_obj
-        current_user.save()
-        send_message(
-            "Okay, enter some word. Enter stop to end this section.", current_user.tg_id)
+    if action_obj.action_type == "GO":
+        current_user.current_location = action_obj.go_to
+        stop_action(current_user)
+    elif action_obj.action_type == "AC":
+        if action_obj.action_name == "Shout at Me":
+            current_user.current_action = action_obj
+            current_user.save()
+            send_message(
+                "Okay, enter some word. Enter stop to end this section.", current_user.tg_id)
+        else:
+            send_message(
+                "Sorry, this function is not done yet. Stay Tuned.", current_user.tg_id)
+            stop_action(current_user)
     else:
-        send_message(
-            "Sorry, this function is not done yet. Stay Tuned.", current_user.tg_id)
-        current_user.current_action = None
-        current_user.save()
-        send_where_to_go(current_user)
+        print("Strange action by user")
 
 
 def carrying_action(current_user, current_action, data):
     if message_is_text(data):
         # stop message needs to be text, if user not sending text sure not stopping the things
         if get_text(data).upper() == current_action.end_action_code.upper():
-            current_user.current_action = None
-            current_user.save()
-            send_where_to_go(current_user)
+            stop_action(current_user)
         else:
             if current_action.action_name == "Shout at Me":
-                words = get_text(data).upper()
-                send_message(f"{words}", current_user.tg_id)
+                words = get_text(data)
+                try:
+                    action_obj = current_user.current_location.action_can_be_taken.get(
+                        action_name=words)
+                    carry_out_action(current_user, action_obj)
+                except Action.DoesNotExist:
+                    send_message(f"{words.upper()}", current_user.tg_id)
     else:
         if current_action.action_name == "Shout at Me":
             send_message(
                 "Looks like I can't shout you what you're saying", current_user.tg_id)
         else:
-            current_user.current_action = None
-            current_user.save()
             send_message(
                 "Sorry, this function is not done yet. Stay Tuned.", current_user.tg_id)
-            send_where_to_go(current_user)
+            stop_action(current_user)
 
 
-def stop_action(current_user, action_obj):
-    pass
+def stop_action(current_user):
+    current_user.current_action = None
+    current_user.save()
+    send_where_to_go(current_user)
