@@ -4,6 +4,7 @@ import json
 import requests
 from decouple import config
 from .models import TGUser, Action
+from time import sleep
 
 TOKEN = config('TOKEN')
 API_KEY = config('ALPHAVANTAGE_API_KEY')
@@ -103,19 +104,19 @@ def carrying_action(current_user, current_action, data):
         else:
             # proper message handling
             words = get_text(data)
-            if current_action.action_name == "Shout at Me":
-                try:
-                    action_obj = current_user.current_location.action_can_be_taken.get(
-                        action_name=words)
-                    carry_out_action(current_user, action_obj)
-                except Action.DoesNotExist:
+            try:
+                action_obj = current_user.current_location.action_can_be_taken.get(
+                    action_name=words)
+                carry_out_action(current_user, action_obj)
+            except Action.DoesNotExist:
+                if current_action.action_name == "Shout at Me":
                     send_message(f"{words.upper()}", current_user.tg_id)
-            elif current_action.action_name == "Find Stock Data":
-                find_stocks(words.upper(), current_user)
-            else:
-                send_message(
-                    "Sorry, this function is not done yet. Stay Tuned.", current_user.tg_id)
-                stop_action(current_user)
+                elif current_action.action_name == "Find Stock Data":
+                    find_stocks(words.upper(), current_user)
+                else:
+                    send_message(
+                        "Sorry, this function is not done yet. Stay Tuned.", current_user.tg_id)
+                    stop_action(current_user)
     else:
         # unproper message handling
         if current_action.action_name == "Shout at Me":
@@ -137,4 +138,31 @@ def find_stocks(symbol, current_user):
     # validation for symbol before checking to prevent wastage of api
     if len(symbol) <= 5 and symbol.isalpha():
         # todo stock check after validation
-        pass
+        # sleep(10)
+        data = get_stock(symbol)
+        if data == {}:
+            # data
+            # todo validate data is blank(user didn't give a good symbol)
+            # todo send the message in html or md ??format
+            # todo stop action after user done finding
+            # todo send a wait message ..... and remove it when finding
+            send_message(
+                f"Hmmm, look like {symbol} is not a valid symbol, or I can't find it... ", current_user.tg_id)
+        elif "Note" in data.keys():
+            send_message(
+                'U have reach the limit, please try again later', current_user.tg_id)
+        else:
+            # data look like no problem
+            # todo process data
+            send_message(f'{data}\n{type(data)}', current_user.tg_id)
+    else:
+        # fail to validate this is a symbol
+        send_message(
+            "This is not a valid symbol", current_user.tg_id)
+    stop_action(current_user)
+
+
+def get_stock(symbol):
+    data = requests.get(
+        f"https://www.alphavantage.co/query?function=OVERVIEW&symbol={symbol}&apikey={API_KEY}")
+    return data.json()
