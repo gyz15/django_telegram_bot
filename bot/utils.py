@@ -5,6 +5,7 @@ import requests
 from decouple import config
 from .models import TGUser, Action
 from time import sleep
+from math import floor, log10
 
 TOKEN = config('TOKEN')
 API_KEY = config('ALPHAVANTAGE_API_KEY')
@@ -139,22 +140,23 @@ def find_stocks(symbol, current_user):
     if len(symbol) <= 5 and symbol.isalpha():
         # todo stock check after validation
         # sleep(10)
-        data = get_stock(symbol)
-        if data == {}:
-            # data
+        raw_data = get_stock(symbol)
+        if raw_data == {}:
+            # raw_data
             # todo validate data is blank(user didn't give a good symbol)
             # todo send the message in html or md ??format
             # todo stop action after user done finding
             # todo send a wait message ..... and remove it when finding
             send_message(
                 f"Hmmm, look like {symbol} is not a valid symbol, or I can't find it... ", current_user.tg_id)
-        elif "Note" in data.keys():
+        elif "Note" in raw_data.keys():
             send_message(
                 'U have reach the limit, please try again later', current_user.tg_id)
         else:
             # data look like no problem
             # todo process data
-            send_message(f'{data}\n{type(data)}', current_user.tg_id)
+            processed_data = process_data(raw_data)
+            send_message(f'{processed_data}', current_user.tg_id)
     else:
         # fail to validate this is a symbol
         send_message(
@@ -166,3 +168,73 @@ def get_stock(symbol):
     data = requests.get(
         f"https://www.alphavantage.co/query?function=OVERVIEW&symbol={symbol}&apikey={API_KEY}")
     return data.json()
+
+
+def process_data(stock_data):
+    md_data = f'''
+Symbol
+{stock_data['Symbol']}
+
+Name
+{stock_data['Name']}
+
+Description
+{stock_data['Description']}
+
+Market Cap
+{millify(stock_data['MarketCapitalization'])}
+
+P/E Ratio
+{stock_data['PERatio']}
+
+PEG Ratio
+{stock_data['PEGRatio']}
+
+P/Sales Ratio
+{stock_data['PriceToSalesRatioTTM']}
+
+P/B Ratio
+{stock_data['PriceToBookRatio']}
+
+Dividend Yield
+{"{:.2%}".format(float(stock_data['DividendYield']))}
+
+EPS
+{stock_data['EPS']}
+
+Profit Margin
+{"{:.2%}".format(float(stock_data['ProfitMargin']))}
+
+Operating Margin
+{"{:.2%}".format(float(stock_data['OperatingMarginTTM']))}
+
+ROE
+{"{:.2%}".format(float(stock_data['ReturnOnEquityTTM']))}
+
+Quarterly Earnings Growth (YOY)
+{"{:.2%}".format(float(stock_data['QuarterlyEarningsGrowthYOY']))}
+
+Quarterly Revenue Growth (YOY)
+{"{:.2%}".format(float(stock_data['QuarterlyRevenueGrowthYOY']))}
+
+Beta
+{round(float(stock_data['Beta']),2)}
+
+Short Percent Float
+{"{:.2%}".format(float(stock_data['ShortPercentFloat']))}
+    '''
+    # for key, value in stock_data.items():
+    #     md_data += f'{key}\n{value}\n\n'
+    # print(md_data)
+    return md_data
+
+
+millnames = ['', 'K', 'M', 'B', 'T']
+
+
+def millify(n):
+    n = float(n)
+    millidx = max(0, min(len(millnames)-1,
+                         int(floor(0 if n == 0 else log10(abs(n))/3))))
+
+    return '{:.2f}{}'.format(n / 10**(3 * millidx), millnames[millidx])
