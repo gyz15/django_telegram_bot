@@ -1,0 +1,14 @@
+.env
+todo.txt
+
+# database
+db.sqlite3
+
+
+# ngrok
+ngrok.exe
+
+
+# others(testing)
+template.json
+testing.md
