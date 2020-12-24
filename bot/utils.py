@@ -4,11 +4,10 @@ import json
 import requests
 from decouple import config
 from .models import TGUser, Action
-from time import sleep
+# from time import sleep
 from math import floor, log10
 
 TOKEN = config('TOKEN')
-API_KEY = config('ALPHAVANTAGE_API_KEY')
 URL = f"https://api.telegram.org/bot{TOKEN}/"
 
 
@@ -18,8 +17,17 @@ def send_message(text, chat_id):
     get_url(url)
 
 
+def send_markdown(text, chat_id):
+    # text = urllib.parse.quote_plus(text)
+    url = URL + \
+        f"sendMessage?text={text}&chat_id={chat_id}&parse_mode=Markdown"
+    get_url(url)
+    # todo merge send_msg and send markdown together
+
+
 def get_url(url):
     response = requests.get(url)
+    # print(response.json())
     content = response.content.decode("utf8")
     return content
 
@@ -86,6 +94,7 @@ def carry_out_action(current_user, action_obj):
             stop_action(current_user)
         elif action_obj.action_type == "AC":
             current_user.current_action = action_obj
+            current_user.save()
             if action_obj.action_name == "Shout at Me":
                 send_message(
                     "Okay, enter some word. Enter stop to end this section.", current_user.tg_id)
@@ -100,6 +109,7 @@ def carry_out_action(current_user, action_obj):
             elif action_obj.action_name == "Setup API Key":
                 send_message("This is the steps to get an api key",
                              current_user.tg_id)
+                # todo steps to setup api key sent to user
             else:
                 send_message(
                     "Can't detect action name and perform action.", current_user.tg_id)
@@ -167,7 +177,7 @@ def find_stocks(symbol, current_user):
             # data look like no problem
             # todo process data
             processed_data = process_data(raw_data)
-            send_message(f'{processed_data}', current_user.tg_id)
+            send_markdown(f'{processed_data}', current_user.tg_id)
     else:
         # fail to validate this is a symbol
         send_message(
@@ -183,55 +193,55 @@ def get_stock(symbol, api_key):
 
 def process_data(stock_data):
     md_data = f'''
-Symbol
+*Symbol*
 {stock_data['Symbol']}
 
-Name
+*Name*
 {stock_data['Name']}
 
-Description
+*Description*
 {stock_data['Description']}
 
-Market Cap
+*Market Cap*
 {millify(stock_data['MarketCapitalization'])}
 
-P/E Ratio
+*P/E Ratio*
 {stock_data['PERatio']}
 
-PEG Ratio
+*PEG Ratio*
 {stock_data['PEGRatio']}
 
-P/Sales Ratio
+*P/Sales Ratio*
 {stock_data['PriceToSalesRatioTTM']}
 
-P/B Ratio
+*P/B Ratio*
 {stock_data['PriceToBookRatio']}
 
-Dividend Yield
+*Dividend Yield*
 {"{:.2%}".format(float(stock_data['DividendYield']))}
 
-EPS
+*EPS*
 {stock_data['EPS']}
 
-Profit Margin
+*Profit Margin*
 {"{:.2%}".format(float(stock_data['ProfitMargin']))}
 
-Operating Margin
+*Operating Margin*
 {"{:.2%}".format(float(stock_data['OperatingMarginTTM']))}
 
-ROE
+*ROE*
 {"{:.2%}".format(float(stock_data['ReturnOnEquityTTM']))}
 
-Quarterly Earnings Growth (YOY)
+*Quarterly Earnings Growth (YOY)*
 {"{:.2%}".format(float(stock_data['QuarterlyEarningsGrowthYOY']))}
 
-Quarterly Revenue Growth (YOY)
+*Quarterly Revenue Growth (YOY)*
 {"{:.2%}".format(float(stock_data['QuarterlyRevenueGrowthYOY']))}
 
-Beta
+*Beta*
 {round(float(stock_data['Beta']),2)}
 
-Short Percent Float
+*Short Percent Float*
 {"{:.2%}".format(float(stock_data['ShortPercentFloat']))}
     '''
     # for key, value in stock_data.items():
@@ -240,10 +250,8 @@ Short Percent Float
     return md_data
 
 
-millnames = ['', 'K', 'M', 'B', 'T']
-
-
 def millify(n):
+    millnames = ['', 'K', 'M', 'B', 'T']
     n = float(n)
     millidx = max(0, min(len(millnames)-1,
                          int(floor(0 if n == 0 else log10(abs(n))/3))))
