@@ -14,6 +14,9 @@ class TGUser(models.Model):
         'bot.Location', on_delete=models.SET_DEFAULT, default=1)
     current_action = models.ForeignKey(
         'bot.Action', on_delete=models.CASCADE, blank=True, null=True)
+    is_developer = models.BooleanField(default=False)
+    alphavantage_api_key = models.CharField(
+        unique=True, blank=True, max_length=16, null=True)
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
@@ -38,6 +41,7 @@ class Action(models.Model):
         'bot.Location', blank=True, on_delete=models.SET_NULL, null=True)
     end_action_code = models.CharField(
         max_length=50, blank=True, null=True)
+    is_developing = models.BooleanField(default=True)
 
     def __str__(self):
         return f'{self.action_name}'
