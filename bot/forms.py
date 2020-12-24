@@ -25,7 +25,6 @@ class TGUserAdminForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        print(cleaned_data)
         if cleaned_data['current_action'] != None:
             if cleaned_data['current_action'].action_type == 'GO':
                 raise ValidationError(

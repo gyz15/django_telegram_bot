@@ -71,30 +71,41 @@ def get_user_or_create(rawdata):
             tg_id=chat_id, first_name=first_name, last_name=last_name)
         current_user.save()
         send_message(
-            f"Welcome {current_user.first_name}. I'm a bot. But currently i'm not available", chat_id)
+            f"Hello {current_user.first_name}", chat_id)
         return current_user
 
 
 def carry_out_action(current_user, action_obj):
-    if action_obj.action_type == "GO":
-        current_user.current_location = action_obj.go_to
+    if action_obj.is_developing and current_user.is_developer is not True:
+        send_message(
+            "Sorry, this function is currently in mantainance or developing. Stay Tuned.", current_user.tg_id)
         stop_action(current_user)
-    elif action_obj.action_type == "AC":
-        current_user.current_action = action_obj
-        if action_obj.action_name == "Shout at Me":
-            send_message(
-                "Okay, enter some word. Enter stop to end this section.", current_user.tg_id)
-        elif action_obj.action_name == "Find Stock Data":
-            send_message(
-                "Okay, enter a stock symbol.", current_user.tg_id)
-        else:
-            send_message(
-                "Sorry, this function is not done yet. Stay Tuned.", current_user.tg_id)
-            current_user.current_action = None
-            stop_action(current_user)
-        current_user.save()
     else:
-        print("Strange action by user")
+        if action_obj.action_type == "GO":
+            current_user.current_location = action_obj.go_to
+            stop_action(current_user)
+        elif action_obj.action_type == "AC":
+            current_user.current_action = action_obj
+            if action_obj.action_name == "Shout at Me":
+                send_message(
+                    "Okay, enter some word. Enter stop to end this section.", current_user.tg_id)
+            elif action_obj.action_name == "Find Stock Data":
+                if current_user.alphavantage_api_key is not None:
+                    send_message(
+                        "Okay, enter a stock symbol.", current_user.tg_id)
+                else:
+                    action_to_be_carry = Action.objects.get(
+                        action_name="Setup API Key")
+                    carry_out_action(current_user, action_to_be_carry)
+            elif action_obj.action_name == "Setup API Key":
+                send_message("This is the steps to get an api key",
+                             current_user.tg_id)
+            else:
+                send_message(
+                    "Can't detect action name and perform action.", current_user.tg_id)
+                stop_action(current_user)
+        else:
+            print("Strange action by user")
 
 
 def carrying_action(current_user, current_action, data):
@@ -114,19 +125,21 @@ def carrying_action(current_user, current_action, data):
                     send_message(f"{words.upper()}", current_user.tg_id)
                 elif current_action.action_name == "Find Stock Data":
                     find_stocks(words.upper(), current_user)
+                elif current_action.action_name == "Setup API Key":
+                    current_user.alphavantage_api_key = words
+                    current_user.save()
+                    stop_action(current_user)
+                    send_message("Ok API Key Set.", current_user.tg_id)
                 else:
                     send_message(
                         "Sorry, this function is not done yet. Stay Tuned.", current_user.tg_id)
                     stop_action(current_user)
     else:
         # unproper message handling
-        if current_action.action_name == "Shout at Me":
-            send_message(
-                "Looks like I can't shout you what you're saying", current_user.tg_id)
-        else:
-            send_message(
-                "Sorry, this function is not done yet. Stay Tuned.", current_user.tg_id)
-            stop_action(current_user)
+        # if current_action.action_name == "Shout at Me":
+        send_message(
+            "Error. Type of message is not suitable to carry out action.", current_user.tg_id)
+        stop_action(current_user)
 
 
 def stop_action(current_user):
@@ -138,14 +151,12 @@ def stop_action(current_user):
 def find_stocks(symbol, current_user):
     # validation for symbol before checking to prevent wastage of api
     if len(symbol) <= 5 and symbol.isalpha():
-        # todo stock check after validation
         # sleep(10)
-        raw_data = get_stock(symbol)
+        raw_data = get_stock(symbol, current_user.alphavantage_api_key)
         if raw_data == {}:
             # raw_data
             # todo validate data is blank(user didn't give a good symbol)
             # todo send the message in html or md ??format
-            # todo stop action after user done finding
             # todo send a wait message ..... and remove it when finding
             send_message(
                 f"Hmmm, look like {symbol} is not a valid symbol, or I can't find it... ", current_user.tg_id)
@@ -164,9 +175,9 @@ def find_stocks(symbol, current_user):
     stop_action(current_user)
 
 
-def get_stock(symbol):
+def get_stock(symbol, api_key):
     data = requests.get(
-        f"https://www.alphavantage.co/query?function=OVERVIEW&symbol={symbol}&apikey={API_KEY}")
+        f"https://www.alphavantage.co/query?function=OVERVIEW&symbol={symbol}&apikey={api_key}")
     return data.json()
 
 
