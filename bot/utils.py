@@ -138,8 +138,8 @@ def carrying_action(current_user, current_action, data):
                 elif current_action.action_name == "Setup API Key":
                     current_user.alphavantage_api_key = words
                     current_user.save()
-                    stop_action(current_user)
                     send_message("Ok API Key Set.", current_user.tg_id)
+                    stop_action(current_user)
                 else:
                     send_message(
                         "Sorry, this function is not done yet. Stay Tuned.", current_user.tg_id)
