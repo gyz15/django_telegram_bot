@@ -12,3 +12,8 @@ ngrok.exe
 # others(testing)
 template.json
 testing.md
+
+# virtual env
+venv/
+
+__pycache__/
