@@ -16,4 +16,7 @@ testing.md
 # virtual env
 venv/
 
+# static files
+staticfiles/
+
 __pycache__/
