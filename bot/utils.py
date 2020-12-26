@@ -7,8 +7,8 @@ from .models import TGUser, Action
 # from time import sleep
 from math import floor, log10
 
-TOKEN = config('TOKEN')
-URL = f"https://api.telegram.org/bot{TOKEN}/"
+DEPLOY_BOT_TOKEN = config('DEPLOY_BOT_TOKEN')
+URL = f"https://api.telegram.org/bot{DEPLOY_BOT_TOKEN}/"
 
 
 def send_message(text, chat_id):
