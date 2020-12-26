@@ -11,7 +11,6 @@ if config('ON_HEROKU',cast=int):
     BOT_TOKEN = config('DEPLOY_BOT_TOKEN')
 else:
     BOT_TOKEN = config('TEST_BOT_TOKEN')
-
 URL = f"https://api.telegram.org/bot{BOT_TOKEN}/"
 
 

@@ -25,9 +25,15 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG',cast=bool,default=False)
+if config('ON_HEROKU',cast=int):
+    DEBUG = False
+else:
+    DEBUG = True
 
-ALLOWED_HOSTS = ["django-yzbot.herokuapp.com","127.0.0.1"]
+if DEBUG:
+    ALLOWED_HOSTS = ["*"]
+else:
+    ALLOWED_HOSTS = ["yz-telegram-bot.herokuapp.com"]
 
 
 # Application definition

@@ -50,4 +50,4 @@ def main(request):
             print(e)
             print("something went wrong")
 
-    return JsonResponse({"ok": "Request processed"})
+    return JsonResponse({'ok': "Request processed"})
