@@ -221,28 +221,28 @@ def process_data(stock_data):
 {stock_data['PriceToBookRatio']}
 
 *Dividend Yield*
-{"{:.2%}".format(float(stock_data['DividendYield']))}
+{change_percent(stock_data['DividendYield'])}
 
 *EPS*
 {stock_data['EPS']}
 
 *Profit Margin*
-{"{:.2%}".format(float(stock_data['ProfitMargin']))}
+{change_percent(stock_data['ProfitMargin'])}
 
 *Operating Margin*
-{"{:.2%}".format(float(stock_data['OperatingMarginTTM']))}
+{change_percent(stock_data['OperatingMarginTTM'])}
 
 *ROE*
-{"{:.2%}".format(float(stock_data['ReturnOnEquityTTM']))}
+{change_percent(stock_data['ReturnOnEquityTTM'])}
 
 *Quarterly Earnings Growth (YOY)*
-{"{:.2%}".format(float(stock_data['QuarterlyEarningsGrowthYOY']))}
+{change_percent(stock_data['QuarterlyEarningsGrowthYOY'])}
 
 *Quarterly Revenue Growth (YOY)*
-{"{:.2%}".format(float(stock_data['QuarterlyRevenueGrowthYOY']))}
+{change_percent(stock_data['QuarterlyRevenueGrowthYOY'])}
 
 *Beta*
-{round(float(stock_data['Beta']),2)}
+{change_beta(stock_data['Beta'])}
 
 *Short Percent Float*
 {"{:.2%}".format(float(stock_data['ShortPercentFloat']))}
@@ -260,3 +260,16 @@ def millify(n):
                          int(floor(0 if n == 0 else log10(abs(n))/3))))
 
     return '{:.2f}{}'.format(n / 10**(3 * millidx), millnames[millidx])
+
+
+def change_percent(string):
+    if string != "None":
+        return "{:.2%}".format(float(string))
+    else:
+        return None
+
+def change_beta(beta):
+    if beta != "None":
+        return {round(float(beta),2)}
+    else:
+        return "-"
