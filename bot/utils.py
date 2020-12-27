@@ -21,7 +21,7 @@ def send_message(text, chat_id):
 
 
 def send_markdown(text, chat_id):
-    # text = urllib.parse.quote_plus(text)
+    text = urllib.parse.quote_plus(text,safe="*")
     url = URL + \
         f"sendMessage?text={text}&chat_id={chat_id}&parse_mode=Markdown"
     get_url(url)
