@@ -6,17 +6,16 @@ from .forms import ActionAdminForm, TGUserAdminForm
 
 admin.site.unregister(Group)
 admin.site.unregister(User)
-# todo set user all field readonly
-# todo edit action type in action admin
-
 
 class ActionAdmin(admin.ModelAdmin):
-    list_display = ('action_name',)
+    list_display = ('action_name','action_type','is_developing')
+    list_editable = ('action_type','is_developing')
     form = ActionAdminForm
 
 
 class TGUserAdmin(admin.ModelAdmin):
-    list_display = ('__str__',)
+    list_display = ('__str__','tg_id','email','is_developer')
+    readonly_fields = ('first_name','last_name','tg_id','email')
     form = TGUserAdminForm
 
 

@@ -11,10 +11,14 @@ class ActionAdminForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        if self.cleaned_data['action_type'] == "GO" and self.cleaned_data['go_to'] == None:
-            raise ValidationError(_("Go To Action should have Location"))
-        elif self.cleaned_data['action_type'] != "GO" and self.cleaned_data['go_to'] != None:
-            raise ValidationError(_("Cannot set location if action is not go"))
+        try:
+            if self.cleaned_data['action_type'] == "GO" and self.cleaned_data['go_to'] == None:
+                raise ValidationError(_("Go To Action should have Location"))
+            elif self.cleaned_data['action_type'] != "GO" and self.cleaned_data['go_to'] != None:
+                raise ValidationError(_("Cannot set location if action is not go"))
+        except KeyError:
+            # pass this if action_type is blank(let system auto remind add first)
+            pass
         return cleaned_data
 
 

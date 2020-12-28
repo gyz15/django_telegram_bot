@@ -8,7 +8,7 @@ from django.forms import ValidationError
 class TGUser(models.Model):
     first_name = models.CharField(max_length=1024)
     last_name = models.CharField(max_length=1024)
-    tg_id = models.IntegerField()
+    tg_id = models.IntegerField(verbose_name="Telegram ID")
     email = models.EmailField(max_length=254, blank=True)
     current_location = models.ForeignKey(
         'bot.Location', on_delete=models.SET_DEFAULT, default=1)
