@@ -30,10 +30,10 @@ if config('ON_HEROKU',cast=int):
 else:
     DEBUG = True
 
-if DEBUG:
-    ALLOWED_HOSTS = ["*"]
-else:
+if config('ON_HEROKU',cast=int):
     ALLOWED_HOSTS = ["yz-telegram-bot.herokuapp.com"]
+else:
+    ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -84,20 +84,24 @@ WSGI_APPLICATION = 'django_telegram_bot.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/3.0/ref/settings/#databases
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME':  config('DB_NAME'),
         'USER': config('DB_USER'),
         'PASSWORD':config('DB_PW'),
-        'HOST':'localhost',
+        'HOST':config('HOST'),
         'PORT':'5432'
     }
 }
 
-# import dj_database_url
-# DATABASES['default'] = dj_database_url.config(conn_max_age=600, ssl_require=True)
+import dj_database_url
+if config('ON_HEROKU',cast=int):
+    DATABASES['default'] = dj_database_url.config(conn_max_age=600, ssl_require=True)
+else:
+    pass
+
+
 
 # Password validation
 # https://docs.djangoproject.com/en/3.0/ref/settings/#auth-password-validators
