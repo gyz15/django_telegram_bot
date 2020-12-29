@@ -7,7 +7,7 @@ from .models import TGUser, Action
 # from time import sleep
 from math import floor, log10
 
-if config('ON_HEROKU',cast=int):
+if config('ON_HEROKU', cast=int):
     BOT_TOKEN = config('DEPLOY_BOT_TOKEN')
 else:
     BOT_TOKEN = config('TEST_BOT_TOKEN')
@@ -21,7 +21,7 @@ def send_message(text, chat_id):
 
 
 def send_markdown(text, chat_id):
-    text = urllib.parse.quote_plus(text,safe="*")
+    text = urllib.parse.quote_plus(text, safe="*")
     url = URL + \
         f"sendMessage?text={text}&chat_id={chat_id}&parse_mode=Markdown"
     get_url(url)
@@ -49,7 +49,8 @@ def send_where_to_go(current_user):
     for action_obj in actions_can_be_done:
         actions_list.append([f'{action_obj.action_name}'])
     actions_list = json.dumps(actions_list)
-    text = urllib.parse.quote_plus("Choose where do you want to go")
+    text = urllib.parse.quote_plus(
+        f"You are currently at {current_user.current_location}. Choose where do you want to go")
     url = URL + \
         f'sendMessage?chat_id={current_user.tg_id}&text={text}&reply_markup={{"keyboard":{actions_list},"one_time_keyboard":true,"force_reply":true}}'
     get_url(url)
@@ -139,10 +140,15 @@ def carrying_action(current_user, current_action, data):
                 elif current_action.action_name == "Find Stock Data":
                     find_stocks(words.upper(), current_user)
                 elif current_action.action_name == "Setup API Key":
-                    current_user.alphavantage_api_key = words
-                    current_user.save()
-                    send_message("Ok API Key Set.", current_user.tg_id)
-                    stop_action(current_user)
+                    if api_is_valid(words):
+                        current_user.alphavantage_api_key = words
+                        current_user.save()
+                        send_message("Ok API Key Set.", current_user.tg_id)
+                        stop_action(current_user)
+                    else:
+                        send_message(
+                            "API Key is not set. (format error)", current_user.tg_id)
+                        stop_action(current_user)
                 else:
                     send_message(
                         "Sorry, this function is not done yet. Stay Tuned.", current_user.tg_id)
@@ -165,7 +171,10 @@ def find_stocks(symbol, current_user):
     # validation for symbol before checking to prevent wastage of api
     if len(symbol) <= 5 and symbol.isalpha():
         # sleep(10)
-        raw_data = get_stock(symbol, current_user.alphavantage_api_key)
+        raw_data = get_stock(
+            symbol, current_user.alphavantage_api_key, "OVERVIEW")
+        cash_flow_data = get_stock(
+            symbol, current_user.alphavantage_api_key, "CASH_FLOW")
         if raw_data == {}:
             # raw_data
             # todo validate data is blank(user didn't give a good symbol)
@@ -173,14 +182,15 @@ def find_stocks(symbol, current_user):
             # todo send a wait message ..... and remove it when finding
             send_message(
                 f"Hmmm, look like {symbol} is not a valid symbol, or I can't find it... ", current_user.tg_id)
-        elif "Note" in raw_data.keys():
+        elif "Note" in raw_data.keys() or "Note" in cash_flow_data.keys():
             send_message(
-                'U have reach the limit, please try again later', current_user.tg_id)
+                'Due to the limitations, you can only look for 2 symbols per minute and 250 symbols per day. Please try again later.', current_user.tg_id)
         else:
-            # data look like no problem
+            # No problem in both data from alphavantage
             # todo process data
-            processed_data = process_data(raw_data)
-            send_markdown(f'{processed_data}', current_user.tg_id)
+            overview_data = process_data(raw_data)
+            final_md = process_cash_flow(overview_data, cash_flow_data)
+            send_markdown(f'{final_md}', current_user.tg_id)
     else:
         # fail to validate this is a symbol
         send_message(
@@ -188,9 +198,9 @@ def find_stocks(symbol, current_user):
     stop_action(current_user)
 
 
-def get_stock(symbol, api_key):
+def get_stock(symbol, api_key, find_type):
     data = requests.get(
-        f"https://www.alphavantage.co/query?function=OVERVIEW&symbol={symbol}&apikey={api_key}")
+        f"https://www.alphavantage.co/query?function={find_type}&symbol={symbol}&apikey={api_key}")
     return data.json()
 
 
@@ -253,6 +263,30 @@ def process_data(stock_data):
     return md_data
 
 
+def process_cash_flow(md_data, stock_data):
+    # md_data -> to send user
+    # stock_data -> raw data from alphavantage
+    md_data += f"\n*Annual Reports (Previous 3 years)*"
+    net_income = []
+    fiscal_date_ending = []
+    free_cash_flow = []
+    for i in range(3):
+        fiscal_date_ending = stock_data['annualReports'][i]['fiscalDateEnding']
+        net_income = millify(int(stock_data['annualReports'][i]['netIncome']))
+        free_cash_flow = millify(int(stock_data['annualReports'][i]['operatingCashflow'])-int(
+            stock_data['annualReports'][i]['capitalExpenditures']))
+        md_data += f'''
+Fiscal Date Ending : {fiscal_date_ending}
+Net Income : {net_income}
+Free Cash Flow (CFOA-CapEx) : {free_cash_flow}
+'''
+    return md_data
+
+
+def api_is_valid(api_key):
+    return True
+
+
 def millify(n):
     millnames = ['', 'K', 'M', 'B', 'T']
     n = float(n)
@@ -268,8 +302,9 @@ def change_percent(string):
     else:
         return None
 
+
 def change_beta(beta):
     if beta != "None":
-        return {round(float(beta),2)}
+        return round(float(beta), 2)
     else:
         return "-"
