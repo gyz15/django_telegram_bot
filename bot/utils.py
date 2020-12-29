@@ -20,12 +20,18 @@ def send_message(text, chat_id):
     get_url(url)
 
 
-def send_markdown(text, chat_id):
+def send_markdown_stock(text, chat_id):
     text = urllib.parse.quote_plus(text, safe="*")
     url = URL + \
         f"sendMessage?text={text}&chat_id={chat_id}&parse_mode=Markdown"
     get_url(url)
     # todo merge send_msg and send markdown together
+
+
+def send_markdown_text(text, chat_id):
+    url = URL + \
+        f"sendMessage?text={text}&chat_id={chat_id}&parse_mode=Markdown"
+    get_url(url)
 
 
 def get_url(url):
@@ -111,8 +117,13 @@ def carry_out_action(current_user, action_obj):
                         action_name="Setup API Key")
                     carry_out_action(current_user, action_to_be_carry)
             elif action_obj.action_name == "Setup API Key":
-                send_message("This is the steps to get an api key",
-                             current_user.tg_id)
+                text = '''
+1. Go to [Alpha Vantage](https://www.alphavantage.co/support/#api-key) and claim your API key.\n
+2. Enter the details and click "GET FREE API KEY".\n
+3. Copy the key and paste it here to send me.\n
+                '''
+                text = urllib.parse.quote_plus(text)
+                send_markdown_text(text, current_user.tg_id)
                 # todo steps to setup api key sent to user
             else:
                 send_message(
@@ -190,7 +201,7 @@ def find_stocks(symbol, current_user):
             # todo process data
             overview_data = process_data(raw_data)
             final_md = process_cash_flow(overview_data, cash_flow_data)
-            send_markdown(f'{final_md}', current_user.tg_id)
+            send_markdown_stock(f'{final_md}', current_user.tg_id)
     else:
         # fail to validate this is a symbol
         send_message(
