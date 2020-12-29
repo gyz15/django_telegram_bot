@@ -147,7 +147,7 @@ def carrying_action(current_user, current_action, data):
                         stop_action(current_user)
                     else:
                         send_message(
-                            "API Key is not set. (format error)", current_user.tg_id)
+                            "API Key is not set. (Format Error)", current_user.tg_id)
                         stop_action(current_user)
                 else:
                     send_message(
@@ -284,7 +284,7 @@ Free Cash Flow (CFOA-CapEx) : {free_cash_flow}
 
 
 def api_is_valid(api_key):
-    return True
+    return api_key.isalnum() and len(api_key) == 16
 
 
 def millify(n):
