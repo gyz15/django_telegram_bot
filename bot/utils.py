@@ -282,7 +282,7 @@ def process_cash_flow(md_data, stock_data):
     fiscal_date_ending = []
     free_cash_flow = []
     try:
-        for i in range(3):
+        for i in range(5):
             fiscal_date_ending = stock_data['annualReports'][i]['fiscalDateEnding']
             net_income = millify(
                 int(stock_data['annualReports'][i]['netIncome']))
