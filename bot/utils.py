@@ -281,16 +281,20 @@ def process_cash_flow(md_data, stock_data):
     net_income = []
     fiscal_date_ending = []
     free_cash_flow = []
-    for i in range(3):
-        fiscal_date_ending = stock_data['annualReports'][i]['fiscalDateEnding']
-        net_income = millify(int(stock_data['annualReports'][i]['netIncome']))
-        free_cash_flow = millify(int(stock_data['annualReports'][i]['operatingCashflow'])-int(
-            stock_data['annualReports'][i]['capitalExpenditures']))
-        md_data += f'''
+    try:
+        for i in range(3):
+            fiscal_date_ending = stock_data['annualReports'][i]['fiscalDateEnding']
+            net_income = millify(
+                int(stock_data['annualReports'][i]['netIncome']))
+            free_cash_flow = millify(int(stock_data['annualReports'][i]['operatingCashflow'])-int(
+                stock_data['annualReports'][i]['capitalExpenditures']))
+            md_data += f'''
 Fiscal Date Ending : {fiscal_date_ending}
 Net Income : {net_income}
 Free Cash Flow (CFOA-CapEx) : {free_cash_flow}
 '''
+    except IndexError:
+        pass
     return md_data
 
 
