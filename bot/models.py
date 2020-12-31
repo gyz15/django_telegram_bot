@@ -17,6 +17,8 @@ class TGUser(models.Model):
     is_developer = models.BooleanField(default=False)
     alphavantage_api_key = models.CharField(
         unique=True, blank=True, max_length=16, null=True)
+    subscribed_fund = models.ManyToManyField(
+        'bots.ArkFund', related_name="subscriber")
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
@@ -45,6 +47,22 @@ class Action(models.Model):
 
     def __str__(self):
         return f'{self.action_name}'
+
+
+class ArkFund(models.Model):
+    ticker = models.CharField(max_length=4)
+    file_url = models.URLField()
+    stocks = models.ManyToManyField('bot.ArkStock', related_name="fund")
+
+
+class ArkStock(models.Model):
+    company = models.CharField(max_length=1024)
+    ticker = models.CharField(blank=True, max_length=30)
+    shares = models.IntegerField(blank=True, default=0)
+    shares_delta = models.IntegerField(blank=True)
+    weight = models.DecimalField(decimal_places=2, max_digits=5)
+    weight_delta = models.IntegerField(blank=True)
+    had_changes = models.BooleanField(default=False)
 
 
 # todo order button (set_position)

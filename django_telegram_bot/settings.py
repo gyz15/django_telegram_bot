@@ -10,12 +10,12 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/3.0/ref/settings/
 """
 
+import dj_database_url
 import os
 from decouple import config
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
 
 
 # Quick-start development settings - unsuitable for production
@@ -25,12 +25,12 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-if config('ON_HEROKU',cast=int):
+if config('ON_HEROKU', cast=int):
     DEBUG = False
 else:
     DEBUG = True
 
-if config('ON_HEROKU',cast=int):
+if config('ON_HEROKU', cast=int):
     ALLOWED_HOSTS = ["yz-telegram-bot.herokuapp.com"]
 else:
     ALLOWED_HOSTS = ["*"]
@@ -89,18 +89,17 @@ DATABASES = {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME':  config('DB_NAME'),
         'USER': config('DB_USER'),
-        'PASSWORD':config('DB_PW'),
-        'HOST':config('HOST'),
-        'PORT':'5432'
+        'PASSWORD': config('DB_PW'),
+        'HOST': config('HOST'),
+        'PORT': '5432'
     }
 }
 
-import dj_database_url
-if config('ON_HEROKU',cast=int):
-    DATABASES['default'] = dj_database_url.config(conn_max_age=600, ssl_require=True)
+if config('ON_HEROKU', cast=int):
+    DATABASES['default'] = dj_database_url.config(
+        conn_max_age=600, ssl_require=True)
 else:
     pass
-
 
 
 # Password validation
@@ -140,6 +139,5 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.0/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR,'staticfiles')
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # STATICFILES_DIRS = (os.path.join(BASE_DIR, 'static'),)
-
