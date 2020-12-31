@@ -277,24 +277,28 @@ def process_data(stock_data):
 def process_cash_flow(md_data, stock_data):
     # md_data -> to send user
     # stock_data -> raw data from alphavantage
-    md_data += f"\n*Annual Reports (Previous 3 years)*"
+    cf_message = ""
+    num_of_year = 0
     net_income = []
     fiscal_date_ending = []
     free_cash_flow = []
     try:
         for i in range(5):
             fiscal_date_ending = stock_data['annualReports'][i]['fiscalDateEnding']
+            num_of_year += 1
             net_income = millify(
                 int(stock_data['annualReports'][i]['netIncome']))
             free_cash_flow = millify(int(stock_data['annualReports'][i]['operatingCashflow'])-int(
                 stock_data['annualReports'][i]['capitalExpenditures']))
-            md_data += f'''
+            cf_message += f'''
 Fiscal Date Ending : {fiscal_date_ending}
 Net Income : {net_income}
 Free Cash Flow (CFOA-CapEx) : {free_cash_flow}
 '''
     except IndexError:
         pass
+    md_data += f"\n*Annual Reports (Previous {num_of_year} years)*"
+    md_data += cf_message
     return md_data
 
 
