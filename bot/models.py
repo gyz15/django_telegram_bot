@@ -65,7 +65,8 @@ class ArkStock(models.Model):
     shares_delta_percent = models.DecimalField(
         decimal_places=2, max_digits=10, blank=True, null=True)
     weight = models.DecimalField(decimal_places=2, max_digits=5)
-    weight_delta = models.IntegerField(blank=True, null=True)
+    weight_delta = models.DecimalField(
+        decimal_places=2, max_digits=5, blank=True, null=True)
     had_changes = models.BooleanField(default=False)
     fund = models.ForeignKey(
         'bot.ArkFund', related_name="stocks", on_delete=models.CASCADE)
