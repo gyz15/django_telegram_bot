@@ -4,6 +4,8 @@ import pandas as pd
 import requests
 import os
 import math
+from .utils import send_message
+import time
 
 
 def main():
@@ -39,19 +41,28 @@ def main():
                 fund = ArkFund.objects.get(ticker=fund)
                 fund.stocks.add(stock)
                 fund.save()
-                # data = []
-                # append
-                # sending_data['added'] =
+                data = []
+                data.append(stock.company)
+                data.append(stock.ticker)
+                data.append(stock.shares)
+                data.append(stock.weight)
+                sending_data['added'].append(data)
         removed_stocks = etf.stocks.filter(had_changes=False)
         for stock in removed_stocks:
-            sending
+            data = []
+            data.append(stock.company)
+            data.append(stock.ticker)
+            data.append(stock.shares)
+            sending_data['removed'].append(data)
             stock.delete()
-            pass
         if os.path.exists(f".\{etf.ticker}.csv"):
             os.remove(f".\{etf.ticker}.csv")
         else:
             pass
-        # todo send message for all user that subscribed to this fund
+        for user in etf.subscriber.all():
+            message = "test"
+            send_markdown_stock(message, user.tg_id)
+            time.sleep(0.01)
 
 
 def handle_stock_add_minus(sending_data, new_company, stock):
