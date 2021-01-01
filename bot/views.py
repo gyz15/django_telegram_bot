@@ -4,7 +4,7 @@ import json
 from .utils import send_message, send_where_to_go, get_user_or_create, message_is_text, get_text, carry_out_action, carrying_action
 from .models import TGUser, Action
 from decouple import config
-
+from .ark import find_ark
 # Create your views here.
 
 
@@ -58,7 +58,7 @@ def ark(request):
     if request.method == 'POST':
         data = json.loads(request.body)
         if data['key'] == config('ARK_KEY'):
-            print(True)
+            find_ark()
             return JsonResponse({'ok': "Request processed"})
         else:
             return JsonResponse({'error': "Key not valid"})

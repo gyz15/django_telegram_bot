@@ -6,9 +6,10 @@ import os
 import math
 from .utils import send_message
 import time
+from datetime import date, timedelta
 
 
-def main():
+def find_ark():
     for etf in ArkFund.objects.all():
         with requests.get(etf.file_url, stream=True) as r:
             with open(f".\{etf.ticker}.csv", "wb") as f:
@@ -35,12 +36,10 @@ def main():
                 ticker = new_company['ticker']
                 shares = new_company['shares']
                 weight = new_company['weight(%)']
+                fund_obj = ArkFund.objects.get(ticker=fund)
                 stock = ArkStock.objects.create(
-                    company=company, ticker=ticker, shares=shares, weight=weight)
+                    company=company, ticker=ticker, shares=shares, weight=weight, fund=fund_obj)
                 stock.save()
-                fund = ArkFund.objects.get(ticker=fund)
-                fund.stocks.add(stock)
-                fund.save()
                 data = []
                 data.append(stock.company)
                 data.append(stock.ticker)
@@ -59,10 +58,48 @@ def main():
             os.remove(f".\{etf.ticker}.csv")
         else:
             pass
+        date = date.today() - timedelta(days=1)
+        date_val = date.strftime('%d/%m/%y')
+        message = f'Changes of {fund} on {date_val}:'
+        if sending_data['added'] != []:
+            message += "\n*Stocks newly added into the fund:*"
+            for data in sending_data['added']:
+                message += f'''
+{data[0]}({data[1]})
+Shares bought: {data[2]}
+Weight: {data[3]}%'''
+        else:
+            message += "\n*(No stocks were newly added)*"
+        if sending_data['removed'] != []:
+            message += "\n*Stocks removed from the fund:*"
+            for data in sending_data['removed']:
+                message += f'''
+{data[0]}({data[1]})
+Shares sold: {data[2]}'''
+        else:
+            message += "\n*(No stocks were removed)*"
+        if sending_data['buying'] != []:
+            message += "\n*Stocks were bought by the fund:*"
+            for data in sending_data['buying']:
+                message += f'''
+{data[0]}({data[1]})
+Shares bought yesterday: {data[2]} (+{data[3]}%)
+Weight: {data[4]}% (+{data[5]}%)'''
+        else:
+            message += "\n*(No stocks were bought)*"
+        if sending_data['selling'] != []:
+            message += "\n*Stocks were sold by the fund:*"
+            for data in sending_data['selling']:
+                message += f'''
+{data[0]}({data[1]})
+Shares sold yesterday: {data[2]} (-{data[3]}%)
+Weight: {data[4]}% (-{data[5]}%)'''
+        else:
+            message += "\n*(No stocks were sold)*"
         for user in etf.subscriber.all():
-            message = "test"
             send_markdown_stock(message, user.tg_id)
             time.sleep(0.01)
+    return True
 
 
 def handle_stock_add_minus(sending_data, new_company, stock):

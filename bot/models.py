@@ -52,8 +52,9 @@ class Action(models.Model):
 class ArkFund(models.Model):
     ticker = models.CharField(max_length=4)
     file_url = models.URLField()
-    stocks = models.ManyToManyField(
-        'bot.ArkStock', related_name="fund")
+
+    def __str__(self):
+        return f'{self.ticker}'
 
 
 class ArkStock(models.Model):
@@ -66,6 +67,10 @@ class ArkStock(models.Model):
     weight = models.DecimalField(decimal_places=2, max_digits=5)
     weight_delta = models.IntegerField(blank=True, null=True)
     had_changes = models.BooleanField(default=False)
+    fund = models.ForeignKey(
+        'bot.ArkFund', related_name="stocks", on_delete=models.CASCADE)
 
+    def __str__(self):
+        return f'{self.fund.ticker} | {self.company}'
 
-# todo order button (set_position)
+    # todo order button (set_position)
