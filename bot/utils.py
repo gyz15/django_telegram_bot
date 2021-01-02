@@ -36,7 +36,7 @@ def send_markdown_text(text, chat_id):
 
 def get_url(url):
     response = requests.get(url)
-    # print(response.json())
+    print(response.json())
     content = response.content.decode("utf8")
     return content
 

@@ -3,7 +3,7 @@ from .utils import send_message
 import pandas as pd
 import requests
 import os
-from .utils import send_markdown_stock, send_message
+from .utils import send_markdown_text
 import time
 from datetime import date, timedelta
 from decimal import Decimal
@@ -70,16 +70,16 @@ def find_ark():
         if sending_data['added'] != []:
             message += "\n*Stocks newly added into the fund:*"
             for data in sending_data['added']:
-                message += f'''
+                message += f'''\n
 {data[0]}({data[1]})
 Shares bought: {data[2]}
 Weight: {data[3]}%'''
         else:
-            message += "\n*(No stocks were newly added)*"
+            message += "\n\n*(No stocks were newly added)*"
         if sending_data['removed'] != []:
-            message += "\n*Stocks removed from the fund:*"
+            message += "\n\n*Stocks removed from the fund:*"
             for data in sending_data['removed']:
-                message += f'''
+                message += f'''\n
 {data[0]}({data[1]})
 Shares sold: {data[2]}'''
         else:
@@ -87,7 +87,7 @@ Shares sold: {data[2]}'''
         if sending_data['buying'] != []:
             message += "\n*Stocks were bought by the fund:*"
             for data in sending_data['buying']:
-                message += f'''
+                message += f'''\n
 {data[0]}({data[1]})
 Shares bought yesterday: {data[2]} (+{data[3]}%)
 Weight: {data[4]}% (+{data[5]}%)'''
@@ -96,15 +96,18 @@ Weight: {data[4]}% (+{data[5]}%)'''
         if sending_data['selling'] != []:
             message += "\n*Stocks were sold by the fund:*"
             for data in sending_data['selling']:
-                message += f'''
+                message += f'''\n
 {data[0]}({data[1]})
 Shares sold yesterday: {data[2]} (-{data[3]}%)
 Weight: {data[4]}% (-{data[5]}%)'''
         else:
             message += "\n*(No stocks were sold)*"
+        message_list = small_chunk(message)
         for user in etf.subscriber.all():
-            send_message(message, user.tg_id)
-            time.sleep(0.01)
+            for message in message_list:
+                send_markdown_text(message, user.tg_id)
+                time.sleep(0.01)
+
     # except Exception as e:
     #     print(e)
     return True
@@ -142,3 +145,8 @@ def handle_stock_add_minus(sending_data, new_company, stock):
     else:
         pass
     return sending_data, stock
+
+
+def small_chunk(message):
+    message_list = []
+    return message_list
