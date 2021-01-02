@@ -1,8 +1,8 @@
 from .models import ArkFund, ArkStock, TGUser
-from .utils import send_message
 import pandas as pd
 import requests
 import os
+import urllib
 from .utils import send_markdown_text
 import time
 from datetime import date, timedelta
@@ -28,23 +28,23 @@ def find_ark():
         # Comparing latest data with the data in the database
         for company_name in new_data.company:
             new_company = new_data.loc[new_data.company == company_name]
-            print(company_name)
+            print(etf, company_name)
             try:
-                stock = etf.stocks.get(company=company_name)
-                sending_data, stock = handle_stock_add_minus(
-                    sending_data, new_company, stock)
+                stock = ArkStock.objects.get(company=company_name, fund=etf)
                 stock.had_changes = True
                 stock.save()
+                sending_data, stock = handle_stock_add_minus(
+                    sending_data, new_company, stock)
             except ObjectDoesNotExist:
                 # todo handle message here
                 fund = new_company['fund'].values[0]
                 company = new_company['company'].values[0]
                 ticker = new_company['ticker'].values[0]
-                shares = new_company['shares'].values[0]
+                shares = int(new_company['shares'].values[0])
                 weight = new_company['weight(%)'].values[0]
                 fund_obj = ArkFund.objects.get(ticker=fund)
                 stock = ArkStock.objects.create(
-                    company=company, ticker=ticker, shares=shares, weight=weight, fund=fund_obj)
+                    company=company, ticker=ticker, shares=shares, weight=weight, fund=fund_obj, had_changes=True)
                 stock.save()
                 data = []
                 data.append(stock.company)
@@ -76,6 +76,7 @@ Shares bought: {data[2]}
 Weight: {data[3]}%'''
         else:
             message += "\n\n*(No stocks were newly added)*"
+        message += "\n\n----------------------------\n\n"
         if sending_data['removed'] != []:
             message += "\n\n*Stocks removed from the fund:*"
             for data in sending_data['removed']:
@@ -84,6 +85,7 @@ Weight: {data[3]}%'''
 Shares sold: {data[2]}'''
         else:
             message += "\n*(No stocks were removed)*"
+        message += "\n\n----------------------------\n\n"
         if sending_data['buying'] != []:
             message += "\n*Stocks were bought by the fund:*"
             for data in sending_data['buying']:
@@ -93,6 +95,7 @@ Shares bought yesterday: {data[2]} (+{data[3]}%)
 Weight: {data[4]}% (+{data[5]}%)'''
         else:
             message += "\n*(No stocks were bought)*"
+        message += "\n\n----------------------------\n\n"
         if sending_data['selling'] != []:
             message += "\n*Stocks were sold by the fund:*"
             for data in sending_data['selling']:
@@ -115,7 +118,7 @@ Weight: {data[4]}% (-{data[5]}%)'''
 
 def handle_stock_add_minus(sending_data, new_company, stock):
     add = True
-    share_count = new_company['shares'].values[0]
+    share_count = int(new_company['shares'].values[0])
     if share_count > stock.shares:
         add = True
     elif share_count < stock.shares:
@@ -149,4 +152,19 @@ def handle_stock_add_minus(sending_data, new_company, stock):
 
 def small_chunk(message):
     message_list = []
-    return message_list
+    formatted_message = []
+    size = 2000
+    chunk = ''
+    split_text = message.split('\n')
+    for t in split_text:
+        if len(chunk) < size:
+            chunk += f'{t}\n'
+        else:
+            message_list.append(chunk)
+            chunk = ''
+            chunk += f'{t}\n'
+        # last chunk wont pass through else clause so it must be save again
+    message_list.append(chunk)
+    formatted_message = [urllib.parse.quote_plus(
+        message, safe="*") for message in message_list]
+    return formatted_message
