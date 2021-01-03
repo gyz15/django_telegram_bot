@@ -13,6 +13,9 @@ import numpy as np
 
 def find_ark():
     # try:
+    for stock in ArkStock.objects.all():
+        stock.had_changes = False
+        stock.save()
     for etf in ArkFund.objects.all():
         print(etf.ticker)
         with requests.get(etf.file_url, stream=True) as r:
