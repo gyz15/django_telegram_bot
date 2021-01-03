@@ -130,11 +130,12 @@ def handle_stock_add_minus(sending_data, new_company, stock):
         stock.shares_delta = (
             (new_company['shares'].values[0]) - (stock.shares))
         stock.shares_delta_percent = Decimal(round(
-            (stock.shares_delta/stock.shares), 2))
+            abs(stock.shares_delta/stock.shares), 2))
         stock.shares = new_company['shares'].values[0]
         stock.weight_delta = (
             Decimal(new_company['weight(%)'].values[0]) - (stock.weight))
         stock.weight = new_company['weight(%)'].values[0]
+        stock.save()
         data = []
         data.append(stock.company)
         data.append(stock.ticker)
