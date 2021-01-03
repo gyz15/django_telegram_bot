@@ -129,12 +129,21 @@ def handle_stock_add_minus(sending_data, new_company, stock):
     if add is not None:
         stock.shares_delta = (
             (new_company['shares'].values[0]) - (stock.shares))
-        stock.shares_delta_percent = Decimal(round(
-            abs(stock.shares_delta/stock.shares), 2))
+        stock.shares_delta_percent = round(Decimal(
+            abs(stock.shares_delta/stock.shares)), 2)
+        print(f'''
+Shares delta: {stock.shares_delta}
+Shares (orig): {stock.shares}
+Percent after counting: {stock.shares_delta_percent}
+        ''')
         stock.shares = new_company['shares'].values[0]
         stock.weight_delta = (
-            Decimal(new_company['weight(%)'].values[0]) - (stock.weight))
+            round((Decimal(new_company['weight(%)'].values[0])) - (stock.weight), 2))
         stock.weight = new_company['weight(%)'].values[0]
+        print(f'''
+Shares (new): {stock}
+Weight delta: {stock.weight_delta}
+''')
         stock.save()
         data = []
         data.append(stock.company)
