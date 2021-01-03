@@ -20,8 +20,14 @@ class TGUserAdmin(admin.ModelAdmin):
     form = TGUserAdminForm
 
 
+class ArkStockAdmin(admin.ModelAdmin):
+    list_display = ['__str__']
+    search_fields = ['__str__']
+    list_filter = ('fund',)
+
+
 admin.site.register(TGUser, TGUserAdmin)
 admin.site.register(Location)
 admin.site.register(Action, ActionAdmin)
 admin.site.register(ArkFund)
-admin.site.register(ArkStock)
+admin.site.register(ArkStock, ArkStockAdmin)
