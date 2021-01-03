@@ -3,7 +3,7 @@ from os import environ
 import json
 import requests
 from decouple import config
-from .models import TGUser, Action
+from .models import TGUser, Action, ArkFund
 # from time import sleep
 from math import floor, log10
 
@@ -50,16 +50,19 @@ def get_text(rawdata):
 
 
 def send_where_to_go(current_user):
-    actions_list = []
-    actions_can_be_done = current_user.current_location.action_can_be_taken.all()
-    for action_obj in actions_can_be_done:
-        actions_list.append([f'{action_obj.action_name}'])
-    actions_list = json.dumps(actions_list)
-    text = urllib.parse.quote_plus(
-        f"You are currently at {current_user.current_location}. Choose where do you want to go")
-    url = URL + \
-        f'sendMessage?chat_id={current_user.tg_id}&text={text}&reply_markup={{"keyboard":{actions_list},"one_time_keyboard":true,"force_reply":true}}'
-    get_url(url)
+    if current_user.current_location.name == "Page 3":
+        subs_ark_fund(current_user)
+    else:
+        actions_list = []
+        actions_can_be_done = current_user.current_location.action_can_be_taken.all()
+        for action_obj in actions_can_be_done:
+            actions_list.append([f'{action_obj.action_name}'])
+        actions_list = json.dumps(actions_list)
+        text = urllib.parse.quote_plus(
+            f"You are currently at {current_user.current_location}. Choose where do you want to go")
+        url = URL + \
+            f'sendMessage?chat_id={current_user.tg_id}&text={text}&reply_markup={{"keyboard":{actions_list},"one_time_keyboard":true,"force_reply":true}}'
+        get_url(url)
 
 
 def message_is_text(rawdata):
@@ -101,6 +104,7 @@ def carry_out_action(current_user, action_obj):
     else:
         if action_obj.action_type == "GO":
             current_user.current_location = action_obj.go_to
+            current_user.save()
             stop_action(current_user)
         elif action_obj.action_type == "AC":
             current_user.current_action = action_obj
@@ -327,3 +331,26 @@ def change_beta(beta):
         return round(float(beta), 2)
     else:
         return "-"
+
+
+def subs_ark_fund(current_user):
+    text = 'You have subscribed on these ARK ETFs:'
+    action_list = []
+    for fund in ArkFund.objects.all():
+        if current_user in fund.subscriber.all():
+            text += f'\n✅ {fund.ticker}'
+            action_list.append([urllib.parse.quote_plus(
+                f'⛔ Unubscibe for {fund.ticker}')])
+        else:
+            text += f'⛔ {fund.ticker}'
+            action_list.append([urllib.parse.quote_plus(
+                f'✅ Subscibe for {fund.ticker}')])
+    print(text)
+    action_list.append(['Back To Home Page'])
+    text = urllib.parse.quote_plus(text)
+    action_list = json.dumps(action_list)
+    url = URL + \
+        f'sendMessage?chat_id={current_user.tg_id}&text={text}&reply_markup={{"keyboard":{action_list},"one_time_keyboard":true,"force_reply":true}}'
+    get_url(url)
+    # todo set action for set ark
+    # todo handle add delete ark status

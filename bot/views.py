@@ -31,7 +31,6 @@ def main(request):
                 # if not, continue action
                 carrying_action(
                     current_user, current_user.current_action, data)
-
             else:
                 if message_is_text(data):
                     action = current_user.current_location.action_can_be_taken.filter(
