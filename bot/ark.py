@@ -137,16 +137,15 @@ Shares (orig): {stock.shares}
 Percent after counting: {stock.shares_delta_percent}
         ''')
         stock.shares = new_company['shares'].values[0]
-        stock.weight_delta = (
-            round(
-                abs(Decimal((new_company['weight(%)'].values[0])) - (stock.weight), 2))
-        stock.weight=new_company['weight(%)'].values[0]
+        stock.weight_delta = abs(
+            round(Decimal((new_company['weight(%)'].values[0])) - (stock.weight), 2))
+        stock.weight = new_company['weight(%)'].values[0]
         print(f'''
 Shares (new): {stock}
 Weight delta: {stock.weight_delta}
 ''')
         stock.save()
-        data=[]
+        data = []
         data.append(stock.company)
         data.append(stock.ticker)
         data.append(stock.shares)
@@ -163,20 +162,20 @@ Weight delta: {stock.weight_delta}
 
 
 def small_chunk(message):
-    message_list=[]
-    formatted_message=[]
-    size=2000
-    chunk=''
-    split_text=message.split('\n')
+    message_list = []
+    formatted_message = []
+    size = 2000
+    chunk = ''
+    split_text = message.split('\n')
     for t in split_text:
         if len(chunk) < size:
             chunk += f'{t}\n'
         else:
             message_list.append(chunk)
-            chunk=''
+            chunk = ''
             chunk += f'{t}\n'
         # last chunk wont pass through else clause so it must be save again
     message_list.append(chunk)
-    formatted_message=[urllib.parse.quote_plus(
+    formatted_message = [urllib.parse.quote_plus(
         message, safe="*") for message in message_list]
     return formatted_message
