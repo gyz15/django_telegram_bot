@@ -37,14 +37,12 @@ def find_ark():
                     sending_data, new_company, stock)
             except ObjectDoesNotExist:
                 # todo handle message here
-                fund = new_company['fund'].values[0]
                 company = new_company['company'].values[0]
                 ticker = new_company['ticker'].values[0]
                 shares = int(new_company['shares'].values[0])
                 weight = new_company['weight(%)'].values[0]
-                fund_obj = ArkFund.objects.get(ticker=fund)
                 stock = ArkStock.objects.create(
-                    company=company, ticker=ticker, shares=shares, weight=weight, fund=fund_obj, had_changes=True)
+                    company=company, ticker=ticker, shares=shares, weight=weight, fund=etf, had_changes=True)
                 stock.save()
                 data = []
                 data.append(stock.company)

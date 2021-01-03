@@ -22,7 +22,7 @@ class TGUserAdmin(admin.ModelAdmin):
 
 class ArkStockAdmin(admin.ModelAdmin):
     list_display = ['__str__']
-    search_fields = ['__str__']
+    search_fields = ['company']
     list_filter = ('fund',)
 
 
