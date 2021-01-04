@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.http import JsonResponse
 import json
-from .utils import send_message, send_where_to_go, get_user_or_create, message_is_text, get_text, carry_out_action, carrying_action, handle_ark_add_rmv
+from .utils import send_message, send_where_to_go, get_user_or_create, message_is_text, get_text, carry_out_action, carrying_action, handle_ark_add_rmv, is_valid_action_request, get_url
 from .models import TGUser, Action
 from decouple import config
 from .ark import find_ark
@@ -59,12 +59,26 @@ def main(request):
 
 
 def ark(request):
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        if data['key'] == config('ARK_KEY'):
-            find_ark()
-            return JsonResponse({'ok': "Request processed"})
-        else:
-            return JsonResponse({'error': "Key not valid"})
+    if is_valid_action_request(request):
+        find_ark()
+        return JsonResponse({'ok': "Request processed"})
     else:
-        return JsonResponse({'error': "Only POST request is acceptable"})
+        return JsonResponse({'error': "Key not valid"})
+
+
+def set_webhook(request):
+    if is_valid_action_request(request):
+        url = f"https://api.telegram.org/bot{config('DEPLOY_BOT_TOKEN')}/setWebhook?url={config('DOMAIN_NAME')}&drop_pending_updates=True"
+        get_url(url)
+        return JsonResponse({'ok': 'Webhook was set'})
+    else:
+        return JsonResponse({'error': "Webhook error"})
+
+
+def delete_webhook(request):
+    if is_valid_action_request(request):
+        url = f"https://api.telegram.org/bot{config('DEPLOY_BOT_TOKEN')}/deleteWebhook"
+        get_url(url)
+        return JsonResponse({'ok': 'Webhook deleted'})
+    else:
+        return JsonResponse({'error': "An error occured"})

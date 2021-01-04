@@ -386,3 +386,11 @@ def handle_ark_add_rmv(text, current_user):
         print(e)
         send_message("Some Error occured.....", current_user.tg_id)
     send_where_to_go(current_user)
+
+
+def is_valid_action_request(request):
+    try:
+        data = json.loads(request.body)
+        return request.method == "POST" and data['key'] == config('ACTION_KEY')
+    except Exception as e:
+        print(e)
