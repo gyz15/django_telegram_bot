@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.http import JsonResponse
 import json
-from .utils import send_message, send_where_to_go, get_user_or_create, message_is_text, get_text, carry_out_action, carrying_action
+from .utils import send_message, send_where_to_go, get_user_or_create, message_is_text, get_text, carry_out_action, carrying_action, handle_ark_add_rmv
 from .models import TGUser, Action
 from decouple import config
 from .ark import find_ark
@@ -33,14 +33,19 @@ def main(request):
                     current_user, current_user.current_action, data)
             else:
                 if message_is_text(data):
-                    action = current_user.current_location.action_can_be_taken.filter(
-                        action_name=get_text(data))
-                    if len(action) == 1:
-                        action = action[0]
-                        carry_out_action(current_user, action)
+                    if current_user.current_location.name == "Page 3" and get_text(data) != "Back To Home Page":
+                        # similar carry out funcion here but for specifically ark only
+                        text = get_text(data)
+                        handle_ark_add_rmv(text, current_user)
                     else:
-                        send_message("Sorry I can't get it", user_id)
-                        send_where_to_go(current_user)
+                        action = current_user.current_location.action_can_be_taken.filter(
+                            action_name=get_text(data))
+                        if len(action) == 1:
+                            action = action[0]
+                            carry_out_action(current_user, action)
+                        else:
+                            send_message("Sorry I can't get it", user_id)
+                            send_where_to_go(current_user)
                 else:
                     send_message("Sorry I'm unable to handle this", user_id)
                     send_where_to_go(current_user)

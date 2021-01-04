@@ -36,7 +36,7 @@ def send_markdown_text(text, chat_id):
 
 def get_url(url):
     response = requests.get(url)
-    print(response.json())
+    # print(response.json())
     content = response.content.decode("utf8")
     return content
 
@@ -342,10 +342,9 @@ def subs_ark_fund(current_user):
             action_list.append([urllib.parse.quote_plus(
                 f'⛔ Unubscibe for {fund.ticker}')])
         else:
-            text += f'⛔ {fund.ticker}'
+            text += f'\n⛔ {fund.ticker}'
             action_list.append([urllib.parse.quote_plus(
                 f'✅ Subscibe for {fund.ticker}')])
-    print(text)
     action_list.append(['Back To Home Page'])
     text = urllib.parse.quote_plus(text)
     action_list = json.dumps(action_list)
@@ -354,3 +353,36 @@ def subs_ark_fund(current_user):
     get_url(url)
     # todo set action for set ark
     # todo handle add delete ark status
+
+
+def handle_ark_add_rmv(text, current_user):
+    add = True
+    ark_list = ['ARKK', 'ARKQ', 'ARKW', 'ARKF', 'ARKG']
+    try:
+        if ("⛔ Unubscibe for ARK" in text or "✅ Subscibe for ARK" in text) and text[-4:] in ark_list:
+            add = "✅ Subscibe for ARK" in text
+            fund = ArkFund.objects.get(ticker=text[-4:])
+            if add:
+                if current_user not in fund.subscriber.all():
+                    fund.subscriber.add(current_user)
+                    send_message(
+                        f"You have subscribed from {fund.ticker}", current_user.tg_id)
+                else:
+                    send_message(
+                        f"You have already subscribed for {fund.ticker}", current_user.tg_id)
+            else:
+                if current_user in fund.subscriber.all():
+                    fund.subscriber.remove(current_user)
+                    send_message(
+                        f"You have unsubscribed from {fund.ticker}", current_user.tg_id)
+                else:
+                    send_message(
+                        f"You have already unsubscribed from {fund.ticker}", current_user.tg_id)
+            fund.save()
+        else:
+            send_message(
+                "Format error for message, Sorry I can't get it", current_user.tg_id)
+    except Exception as e:
+        print(e)
+        send_message("Some Error occured.....", current_user.tg_id)
+    send_where_to_go(current_user)
