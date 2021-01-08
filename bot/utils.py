@@ -186,26 +186,18 @@ def find_stocks(symbol, current_user):
     # validation for symbol before checking to prevent wastage of api
     if len(symbol) <= 5 and symbol.isalpha():
         # sleep(10)
-        raw_data = get_stock(
-            symbol, current_user.alphavantage_api_key, "OVERVIEW")
-        cash_flow_data = get_stock(
-            symbol, current_user.alphavantage_api_key, "CASH_FLOW")
-        if raw_data == {}:
-            # raw_data
-            # todo validate data is blank(user didn't give a good symbol)
-            # todo send the message in html or md ??format
-            # todo send a wait message ..... and remove it when finding
+        raw_data = get_stock(symbol)
+        if "errors" in raw_data.keys():
             send_message(
-                f"Hmmm, look like {symbol} is not a valid symbol, or I can't find it... ", current_user.tg_id)
-        elif "Note" in raw_data.keys() or "Note" in cash_flow_data.keys():
-            send_message(
-                'Due to the limitations, you can only look for 2 symbols per minute and 250 symbols per day. Please try again later.', current_user.tg_id)
+                f'The stock {symbol} could not be found', current_user.tg_id)
         else:
-            # No problem in both data from alphavantage
-            # todo process data
-            overview_data = process_data(raw_data)
-            final_md = process_cash_flow(overview_data, cash_flow_data)
-            send_markdown_stock(f'{final_md}', current_user.tg_id)
+            if raw_data['data'][0]['attributes']['equityType'] != 'stocks':
+                send_message(
+                    f'{symbol} is not a stock', current_user.tg_id)
+            else:
+                # todo process data
+                data = process_data(raw_data['data'][0]['attributes'])
+                send_markdown_stock(f'{data}', current_user.tg_id)
     else:
         # fail to validate this is a symbol
         send_message(
@@ -213,96 +205,79 @@ def find_stocks(symbol, current_user):
     stop_action(current_user)
 
 
-def get_stock(symbol, api_key, find_type):
+def get_stock(symbol):
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:50.0) Gecko/20100101 Firefox/50.0'}
     data = requests.get(
-        f"https://www.alphavantage.co/query?function={find_type}&symbol={symbol}&apikey={api_key}")
+        f"https://seekingalpha.com/api/v3/symbols/{symbol}/data", headers=headers)
     return data.json()
 
 
 def process_data(stock_data):
     md_data = f'''
 *Symbol*
-{stock_data['Symbol']}
+{stock_data['name']}
 
 *Name*
-{stock_data['Name']}
+{stock_data['company']}
+
+*Close*
+{stock_data['close']}
 
 *Description*
-{stock_data['Description']}
+{stock_data['description']}
 
 *Market Cap*
-{millify(stock_data['MarketCapitalization'])}
+{millify(stock_data['marketCap'])}
 
-*P/E Ratio*
-{stock_data['PERatio']}
+*P/E Ratio (FWD)*
+{to_2_d(stock_data['peRatioFwd'])}
 
-*PEG Ratio*
-{stock_data['PEGRatio']}
+*P/E Ratio (TTM)*
+{to_2_d(stock_data['trailingPe'])}
 
-*P/Sales Ratio*
-{stock_data['PriceToSalesRatioTTM']}
+*PEG Ratio (FWD)*
+{to_2_d(stock_data['pegRatio'])}
 
-*P/B Ratio*
-{stock_data['PriceToBookRatio']}
+*PS Ratio*
+{to_2_d(stock_data['priceSales'])}
 
-*Dividend Yield*
-{change_percent(stock_data['DividendYield'])}
+*PB Ratio*
+{to_2_d(stock_data['priceBook'])}
 
 *EPS*
-{stock_data['EPS']}
+{to_2_d(stock_data['eps'])}
 
-*Profit Margin*
-{change_percent(stock_data['ProfitMargin'])}
+*Estimate EPS*
+{to_2_d(stock_data['estimateEps'])}
 
-*Operating Margin*
-{change_percent(stock_data['OperatingMarginTTM'])}
+*Current Ratio*
+{to_2_d(stock_data['curRatio'])}
+
+*Debt / FCF*
+{to_2_d(stock_data['debtFcf'])}
+
+*Dividend Yield*
+{to_2_d(stock_data['divYield'])}
+
+*Revenue Growth (3Y)*
+{change_percent(stock_data['revenueGrowth3'])}
+
+*Earnings Growth (3Y)*
+{change_percent(stock_data['earningsGrowth3'])}
+
+*Free Cash Flow*
+{millify(stock_data['fcf'])}
 
 *ROE*
-{change_percent(stock_data['ReturnOnEquityTTM'])}
+{change_percent(stock_data['roe'])}
 
-*Quarterly Earnings Growth (YOY)*
-{change_percent(stock_data['QuarterlyEarningsGrowthYOY'])}
+*Gross Profit Margin(TTM)*
+{change_percent(stock_data['grossMargin'])}
 
-*Quarterly Revenue Growth (YOY)*
-{change_percent(stock_data['QuarterlyRevenueGrowthYOY'])}
-
-*Beta*
-{change_beta(stock_data['Beta'])}
-
-*Short Percent Float*
-{"{:.2%}".format(float(stock_data['ShortPercentFloat']))}
+*Net Income*
+{millify(stock_data['netIncome'])}
     '''
-    # for key, value in stock_data.items():
-    #     md_data += f'{key}\n{value}\n\n'
-    # print(md_data)
-    return md_data
-
-
-def process_cash_flow(md_data, stock_data):
-    # md_data -> to send user
-    # stock_data -> raw data from alphavantage
-    cf_message = ""
-    num_of_year = 0
-    net_income = []
-    fiscal_date_ending = []
-    free_cash_flow = []
-    try:
-        for i in range(5):
-            fiscal_date_ending = stock_data['annualReports'][i]['fiscalDateEnding']
-            num_of_year += 1
-            net_income = millify(
-                int(stock_data['annualReports'][i]['netIncome']))
-            free_cash_flow = millify(int(stock_data['annualReports'][i]['operatingCashflow'])-int(
-                stock_data['annualReports'][i]['capitalExpenditures']))
-            cf_message += f'''
-Fiscal Date Ending : {fiscal_date_ending}
-Net Income : {net_income}
-Free Cash Flow (CFOA-CapEx) : {free_cash_flow}
-'''
-    except IndexError:
-        pass
-    md_data += f"\n*Annual Reports (Previous {num_of_year} years)*"
-    md_data += cf_message
     return md_data
 
 
@@ -320,17 +295,17 @@ def millify(n):
 
 
 def change_percent(string):
-    if string != "None":
-        return "{:.2%}".format(float(string))
+    if string != None and string != "NM":
+        return f'{round(float(string), 2)}%'
     else:
         return None
 
 
-def change_beta(beta):
-    if beta != "None":
-        return round(float(beta), 2)
+def to_2_d(value):
+    if value != "NM" and value != None:
+        return round(float(value), 2)
     else:
-        return "-"
+        return None
 
 
 def subs_ark_fund(current_user):
