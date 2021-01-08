@@ -3,8 +3,7 @@ from os import environ
 import json
 import requests
 from decouple import config
-from .models import TGUser, Action, ArkFund
-# from time import sleep
+from .models import TGUser, Action
 from math import floor, log10
 
 if config('ON_HEROKU', cast=int):
@@ -113,22 +112,8 @@ def carry_out_action(current_user, action_obj):
                 send_message(
                     "Okay, enter some word. Enter stop to end this section.", current_user.tg_id)
             elif action_obj.action_name == "Find Stock Data":
-                if current_user.alphavantage_api_key is not None:
-                    send_message(
-                        "Okay, enter a stock symbol.", current_user.tg_id)
-                else:
-                    action_to_be_carry = Action.objects.get(
-                        action_name="Setup API Key")
-                    carry_out_action(current_user, action_to_be_carry)
-            elif action_obj.action_name == "Setup API Key":
-                text = '''
-1. Go to [Alpha Vantage](https://www.alphavantage.co/support/#api-key) and claim your API key.\n
-2. Enter the details and click "GET FREE API KEY".\n
-3. Copy the key and paste it here to send me.\n
-                '''
-                text = urllib.parse.quote_plus(text)
-                send_markdown_text(text, current_user.tg_id)
-                # todo steps to setup api key sent to user
+                send_message(
+                    "Okay, enter a stock symbol.", current_user.tg_id)
             else:
                 send_message(
                     "Can't detect action name and perform action.", current_user.tg_id)
@@ -154,16 +139,6 @@ def carrying_action(current_user, current_action, data):
                     send_message(f"{words.upper()}", current_user.tg_id)
                 elif current_action.action_name == "Find Stock Data":
                     find_stocks(words.upper(), current_user)
-                elif current_action.action_name == "Setup API Key":
-                    if api_is_valid(words):
-                        current_user.alphavantage_api_key = words
-                        current_user.save()
-                        send_message("Ok API Key Set.", current_user.tg_id)
-                        stop_action(current_user)
-                    else:
-                        send_message(
-                            "API Key is not set. (Format Error)", current_user.tg_id)
-                        stop_action(current_user)
                 else:
                     send_message(
                         "Sorry, this function is not done yet. Stay Tuned.", current_user.tg_id)
@@ -183,7 +158,6 @@ def stop_action(current_user):
 
 
 def find_stocks(symbol, current_user):
-    # validation for symbol before checking to prevent wastage of api
     if len(symbol) <= 5 and symbol.isalpha():
         # sleep(10)
         raw_data = get_stock(symbol)
@@ -281,10 +255,6 @@ def process_data(stock_data):
     return md_data
 
 
-def api_is_valid(api_key):
-    return api_key.isalnum() and len(api_key) == 16
-
-
 def millify(n):
     millnames = ['', 'K', 'M', 'B', 'T']
     n = float(n)
@@ -306,66 +276,3 @@ def to_2_d(value):
         return round(float(value), 2)
     else:
         return None
-
-
-def subs_ark_fund(current_user):
-    text = 'You have subscribed on these ARK ETFs:'
-    action_list = []
-    for fund in ArkFund.objects.all():
-        if current_user in fund.subscriber.all():
-            text += f'\n✅ {fund.ticker}'
-            action_list.append([urllib.parse.quote_plus(
-                f'⛔ Unubscibe for {fund.ticker}')])
-        else:
-            text += f'\n⛔ {fund.ticker}'
-            action_list.append([urllib.parse.quote_plus(
-                f'✅ Subscibe for {fund.ticker}')])
-    action_list.append(['Back To Home Page'])
-    text = urllib.parse.quote_plus(text)
-    action_list = json.dumps(action_list)
-    url = URL + \
-        f'sendMessage?chat_id={current_user.tg_id}&text={text}&reply_markup={{"keyboard":{action_list},"one_time_keyboard":true,"force_reply":true}}'
-    get_url(url)
-    # todo set action for set ark
-    # todo handle add delete ark status
-
-
-def handle_ark_add_rmv(text, current_user):
-    add = True
-    ark_list = ['ARKK', 'ARKQ', 'ARKW', 'ARKF', 'ARKG']
-    try:
-        if ("⛔ Unubscibe for ARK" in text or "✅ Subscibe for ARK" in text) and text[-4:] in ark_list:
-            add = "✅ Subscibe for ARK" in text
-            fund = ArkFund.objects.get(ticker=text[-4:])
-            if add:
-                if current_user not in fund.subscriber.all():
-                    fund.subscriber.add(current_user)
-                    send_message(
-                        f"You have subscribed from {fund.ticker}", current_user.tg_id)
-                else:
-                    send_message(
-                        f"You have already subscribed for {fund.ticker}", current_user.tg_id)
-            else:
-                if current_user in fund.subscriber.all():
-                    fund.subscriber.remove(current_user)
-                    send_message(
-                        f"You have unsubscribed from {fund.ticker}", current_user.tg_id)
-                else:
-                    send_message(
-                        f"You have already unsubscribed from {fund.ticker}", current_user.tg_id)
-            fund.save()
-        else:
-            send_message(
-                "Format error for message, Sorry I can't get it", current_user.tg_id)
-    except Exception as e:
-        print(e)
-        send_message("Some Error occured.....", current_user.tg_id)
-    send_where_to_go(current_user)
-
-
-def is_valid_action_request(request):
-    try:
-        data = json.loads(request.body)
-        return request.method == "POST" and data['key'] == config('ACTION_KEY')
-    except Exception as e:
-        print(e)

@@ -4,7 +4,6 @@ from django.views.decorators.csrf import csrf_exempt
 
 urlpatterns = [
     path('', csrf_exempt(views.main), name="main"),
-    path('ark/', csrf_exempt(views.ark), name="ark"),
     path('setwebhook/', csrf_exempt(views.set_webhook), name="setwebhook"),
     path('deletewebhook/', csrf_exempt(views.delete_webhook), name="deletewebhook"),
 ]
