@@ -182,13 +182,13 @@ def find_stocks(symbol, current_user):
 def get_stock(symbol):
     if config('ON_HEROKU', cast=int):
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:50.0) Gecko/20100101 Firefox/50.0'}
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
         data = requests.get(
             f"https://seekingalpha.com/api/v3/symbols/{symbol}/data", headers=headers)
         print(data.text)
     else:
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:50.0) Gecko/20100101 Firefox/50.0'}
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
         data = requests.get(
             f"https://seekingalpha.com/api/v3/symbols/{symbol}/data", headers=headers)
     return data.json()
