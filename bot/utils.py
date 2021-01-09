@@ -183,6 +183,7 @@ def get_stock(symbol):
     if config('ON_HEROKU', cast=int):
         data = requests.get(
             f"https://seekingalpha.com/api/v3/symbols/{symbol}/data")
+        print(data)
     else:
         headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:50.0) Gecko/20100101 Firefox/50.0'}
