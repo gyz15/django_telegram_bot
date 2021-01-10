@@ -5,6 +5,7 @@ import requests
 from decouple import config
 from .models import TGUser, Action
 from math import floor, log10
+from fake_useragent import UserAgent
 
 if config('ON_HEROKU', cast=int):
     BOT_TOKEN = config('DEPLOY_BOT_TOKEN')
@@ -180,15 +181,16 @@ def find_stocks(symbol, current_user):
 
 
 def get_stock(symbol):
+    ua = UserAgent()
     if config('ON_HEROKU', cast=int):
         headers = {
-            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36'}
+            'User-Agent': f'{str(ua.Chrome)}'}
         data = requests.get(
             f"https://seekingalpha.com/api/v3/symbols/{symbol}/data", headers=headers)
         print(data.text)
     else:
         headers = {
-            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36'}
+            'User-Agent': f'{str(ua.Chrome)}'}
         data = requests.get(
             f"https://seekingalpha.com/api/v3/symbols/{symbol}/data", headers=headers)
     return data.json()
@@ -263,23 +265,25 @@ def process_data(stock_data):
 
 
 def millify(n):
-    millnames = ['', 'K', 'M', 'B', 'T']
-    n = float(n)
-    millidx = max(0, min(len(millnames)-1,
-                         int(floor(0 if n == 0 else log10(abs(n))/3))))
+    if n != None and n != "NM":
+        millnames = ['', 'K', 'M', 'B', 'T']
+        n = float(n)
+        millidx = max(0, min(len(millnames)-1,
+                             int(floor(0 if n == 0 else log10(abs(n))/3))))
 
-    return '{:.2f}{}'.format(n / 10**(3 * millidx), millnames[millidx])
+        return '{:.2f}{}'.format(n / 10**(3 * millidx), millnames[millidx])
+    return n
 
 
 def change_percent(string):
     if string != None and string != "NM":
         return f'{round(float(string), 2)}%'
     else:
-        return None
+        return string
 
 
 def to_2_d(value):
     if value != "NM" and value != None:
         return round(float(value), 2)
     else:
-        return None
+        return value
