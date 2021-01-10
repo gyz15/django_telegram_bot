@@ -184,7 +184,7 @@ def get_stock(symbol):
     ua = UserAgent()
     if config('ON_HEROKU', cast=int):
         headers = {
-            'User-Agent': f'{str(ua.Chrome)}'}
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36'}
         data = requests.get(
             f"https://seekingalpha.com/api/v3/symbols/{symbol}/data", headers=headers)
         print(data.text)
