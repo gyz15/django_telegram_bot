@@ -6,6 +6,7 @@ from decouple import config
 from .models import TGUser, Action
 from math import floor, log10
 from fake_useragent import UserAgent
+import re
 
 if config('ON_HEROKU', cast=int):
     BOT_TOKEN = config('DEPLOY_BOT_TOKEN')
@@ -50,19 +51,16 @@ def get_text(rawdata):
 
 
 def send_where_to_go(current_user):
-    if current_user.current_location.name == "Page 3":
-        subs_ark_fund(current_user)
-    else:
-        actions_list = []
-        actions_can_be_done = current_user.current_location.action_can_be_taken.all()
-        for action_obj in actions_can_be_done:
-            actions_list.append([f'{action_obj.action_name}'])
-        actions_list = json.dumps(actions_list)
-        text = urllib.parse.quote_plus(
-            f"You are currently at {current_user.current_location}. Choose where do you want to go")
-        url = URL + \
-            f'sendMessage?chat_id={current_user.tg_id}&text={text}&reply_markup={{"keyboard":{actions_list},"one_time_keyboard":true,"force_reply":true}}'
-        get_url(url)
+    actions_list = []
+    actions_can_be_done = current_user.current_location.action_can_be_taken.all()
+    for action_obj in actions_can_be_done:
+        actions_list.append([f'{action_obj.action_name}'])
+    actions_list = json.dumps(actions_list)
+    text = urllib.parse.quote_plus(
+        f"You are currently at {current_user.current_location}. Choose where do you want to go")
+    url = URL + \
+        f'sendMessage?chat_id={current_user.tg_id}&text={text}&reply_markup={{"keyboard":{actions_list},"one_time_keyboard":true,"force_reply":true}}'
+    get_url(url)
 
 
 def message_is_text(rawdata):
@@ -109,9 +107,10 @@ def carry_out_action(current_user, action_obj):
         elif action_obj.action_type == "AC":
             current_user.current_action = action_obj
             current_user.save()
-            if action_obj.action_name == "Shout at Me":
+            if action_obj.action_name == "Stock Analysis":
                 send_message(
-                    "Okay, enter some word. Enter stop to end this section.", current_user.tg_id)
+                    "Enter url.", current_user.tg_id
+                )
             elif action_obj.action_name == "Find Stock Data":
                 send_message(
                     "Okay, enter a stock symbol.", current_user.tg_id)
@@ -136,17 +135,21 @@ def carrying_action(current_user, current_action, data):
                     action_name=words)
                 carry_out_action(current_user, action_obj)
             except Action.DoesNotExist:
-                if current_action.action_name == "Shout at Me":
-                    send_message(f"{words.upper()}", current_user.tg_id)
-                elif current_action.action_name == "Find Stock Data":
+                if current_action.action_name == "Find Stock Data":
                     find_stocks(words.upper(), current_user)
+                elif current_action.action_name == "Stock Analysis":
+                    if re.findall('https://seekingalpha.com/article/[0-9]+', words):
+                        url = re.findall("article/[0-9]+-", words)[0]
+                        key = url[8:-1]
+                        find_news(words, key, current_user.tg_id)
+                    else:
+                        send_message("Invalid URL.", current_user.tg_id)
                 else:
                     send_message(
                         "Sorry, this function is not done yet. Stay Tuned.", current_user.tg_id)
                     stop_action(current_user)
     else:
         # unproper message handling
-        # if current_action.action_name == "Shout at Me":
         send_message(
             "Error. Type of message is not suitable to carry out action.", current_user.tg_id)
         stop_action(current_user)
@@ -182,28 +185,22 @@ def find_stocks(symbol, current_user):
 
 def get_stock(symbol):
     ua = UserAgent()
-    if config('ON_HEROKU', cast=int):
-        headers = {
-            'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
-            'accept-encoding': 'gzip, deflate, br',
-            'accept-language': 'en-US,en;q=0.9',
-            'cache-control': 'no-cache',
-            'cookie': 'machine_cookie=3977770892613',
-            'sec-fetch-dest': 'document',
-            'sec-fetch-mode': 'navigate',
-            'sec-fetch-site': 'none',
-            'sec-fetch-user': '?1',
-            'upgrade-insecure-requests': '1',
-            'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36',
-        }
-        data = requests.get(
-            f"https://seekingalpha.com/api/v3/symbols/{symbol}/data", headers=headers)
-        print(data.text)
-    else:
-        headers = {
-            'User-Agent': f'{str(ua.random)}'}
-        data = requests.get(
-            f"https://seekingalpha.com/api/v3/symbols/{symbol}/data", headers=headers)
+    headers = {
+        'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+        'accept-encoding': 'gzip, deflate, br',
+        'accept-language': 'en-US,en;q=0.9',
+        'cache-control': 'no-cache',
+        'cookie': 'machine_cookie=3977770892613',
+        'sec-fetch-dest': 'document',
+        'sec-fetch-mode': 'navigate',
+        'sec-fetch-site': 'none',
+        'sec-fetch-user': '?1',
+        'upgrade-insecure-requests': '1',
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36',
+    }
+    data = requests.get(
+        f"https://seekingalpha.com/api/v3/symbols/{symbol}/data", headers=headers)
+    print(data.text)
     return data.json()
 
 
@@ -298,3 +295,152 @@ def to_2_d(value):
         return round(float(value), 2)
     else:
         return value
+
+
+def find_news(original_url, key, chat_id):
+    data = get_news_url(original_url, key)
+    content = data['data']['attributes']['content']
+    # Pre-handling
+    content = content.replace("\n", "")
+    content = re.sub(r'\*', "\\*", content)
+    content = re.sub('`', "\`", content)
+    content = re.sub('</div>\s?', "", content)
+
+    # Handling p tag - making a new paragraph
+    content = re.sub('</p>\s?', "\n\n", content)
+    content = re.sub('<p>\s?', "", content)
+
+    # Deleting div and span
+    content = re.sub('<div["?@\s=a-zA-z0-9:/_.-]*>\s?', "", content)
+    content = re.sub('<span["?@\s=a-zA-z0-9:/_.-]*>', "", content)
+    content = re.sub('</span>', "", content)
+
+    # Substitute double/triple bolded element with one * only
+    content = re.sub(
+        '<(h[1-6]|strong|b)["?@\s=a-zA-z0-9:/_.-]*><(h[1-6]|strong|b)["?@\s=a-zA-z0-9:/_.-]*>(<(h[1-6]|strong|b)["?@\s=a-zA-z0-9:/_.-]*>)?', '*', content)
+    content = re.sub(
+        '</(h[1-6]|strong|b)["?@\s=a-zA-z0-9:/_.-]*></(h[1-6]|strong|b)["?@\s=a-zA-z0-9:/_.-]*>(</(h[1-6]|strong|b)["?@\s=a-zA-z0-9:/_.-]*>)?', '*\n', content)
+
+    # Ignore table
+    content = re.sub('<table[<>"\n?@\s=a-zA-z0-9:/_.-]*>[-><"\n?@\s=a-zA-z0-9:/_./,/(/)]*</table>\s?',
+                     '*-- Table Here. Stay Tuned --*\n\n', content)
+
+    # Substitute left bolded element with one *
+    content = re.sub('<h[1-6]["?@\s=a-zA-z0-9:/_.-]*>\s?', '*', content)
+    content = re.sub('</h[1-6]["?@\s=a-zA-z0-9:/_.-]*>\s?', '*\n', content)
+    content = re.sub('<strong["?@\s=a-zA-z0-9:/_.-]*>\s?', '*', content)
+    content = re.sub('</strong>\s?', '*\n', content)
+    content = re.sub('<b ["?@\s=a-zA-z0-9:/_.-]*>\s?', '*', content)
+    content = re.sub('</b>\s?', '*\n', content)
+    content = re.sub('</blockquote>\s?', '~~~~~~~~~~\n\n', content)
+    content = re.sub(
+        '<blockquote ["?@\s=a-zA-z0-9:/_.-]*>\s?', '~~~~~~~~~~\n', content)
+
+    # Removing em tag
+    content = re.sub('<em["?@\s=a-zA-z0-9:/_.-]*>\s?', '', content)
+    content = re.sub('</em>\s?', '', content)
+
+    # Making ordered or unordered list
+    content = re.sub('<(u|o)l>\s?', '~~~~~~~~~~\n', content)
+    content = re.sub('</(u|o)l>\s?', '~~~~~~~~~~\n\n', content)
+    content = re.sub('<li>\s?', '>>', content)
+    content = re.sub('</li>\s?', '\n\n', content)
+
+    # Making figure
+    content = re.sub('</figure["?@\s=a-zA-z0-9:/_.-]*>\s?',
+                     "\n-\n\n", content)
+    content = re.sub('<figure["?@\s=a-zA-z0-9:/_.-]*>\s?', "-\n", content)
+
+    # Break line
+    content = re.sub('<hr>', "------------\n\n", content)
+
+    # Translate a tag in HTML to Markdown format
+    a_tag_end = '</a>'
+    link_href = '<a href="[\(\)+%~,?@#;&\s=a-zA-Z0-9:/_.-]*"'
+    a_tag = '<a href="[\(\)+%~,?@#;&"\s=a-zA-Z0-9:/_.-]*>'
+    href_with_tag = re.findall(link_href, content)
+    total_a_tag = re.findall(a_tag, content)
+    total_a_tag_end = re.findall(a_tag_end, content)
+
+    for i in range(len(href_with_tag)):
+        pure_link = href_with_tag[i][9:-1]
+        start_tag = total_a_tag[i]
+        end_tag = total_a_tag_end[i]
+        content = content.replace(end_tag, f']({pure_link})', 1)
+        content = content.replace(start_tag, "[", 1)
+
+    # Replacing image with words and send it after whole message is sent
+    img_src = '<img src="[?@=a-zA-z0-9:/_.-]*"'
+    total_img_src = re.findall(img_src, content)
+    total_img_src = [x[10:-1]for x in total_img_src]
+
+    img_tag = '<img src="["#&,?@;\s=a-zA-Z0-9:/_.-]*>\s?'
+    total_img_tag = re.findall(img_tag, content)
+    for i in range(len(total_img_tag)):
+        tag = total_img_tag[i]
+        content = content.replace(tag, f"_Image {i+1}_")
+    img_with_link_italic = re.findall("\[_Image [\d]+_]", content)
+
+    # If image tag is wrapped by link, will remove the italic effect
+    for word in img_with_link_italic:
+        content = content.replace(word, re.sub("_", '', word))
+
+    # Changing the words into url encode
+    content = re.sub('&amp;', '%26', content)
+    content = re.sub('#', '%23', content)
+
+    # Splitting the content into small chunks to prevent too big messages and cause fail send
+    content_chunk_list = small_chunk(content)
+    for chunk in content_chunk_list:
+        r = requests.get(
+            f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage?chat_id={chat_id}&text={chunk}&parse_mode=markdown&disable_web_page_preview=True").json()
+        # Pring error if got an error
+        if r['ok'] == False:
+            print("--------------------------------------------------------")
+            print(r['description'])
+            print(chunk)
+
+    # Sending an image if there is one
+    if len(total_img_src) != 0:
+        for x in total_img_src:
+            img = requests.get(
+                f"https://api.telegram.org/bot{BOT_TOKEN}/sendPhoto?chat_id={chat_id}&photo={x}&caption=Image {total_img_src.index(x)+1}")
+            print(img.text)
+
+
+def small_chunk(message):
+    # Split the message into small chunks with size 3000 characters
+    message_list = []
+    formatted_message = []
+    size = 3000
+    chunk = ''
+    split_text = message.split('\n')
+    for t in split_text:
+        if len(chunk) < size:
+            chunk += f'{t}\n'
+        else:
+            message_list.append(chunk)
+            chunk = ''
+            chunk += f'{t}\n'
+    message_list.append(chunk)
+    return message_list
+
+
+def get_news_url(original_url, key):
+    # Get url by using requests and custom headers
+    url = f'https://seekingalpha.com/api/v3/articles/{key}?include=author%2Cauthor.authorResearch%2Cco_authors%2CprimaryTickers%2CsecondaryTickers%2CotherTags%2Cpresentations%2Cpresentations.slides%2Csentiments%2CpromotedService'
+    headers = {
+        'accept': '*/*',
+        'accept-encoding': 'gzip,deflate,br',
+        'accept-language': 'en-US,en;q=0.9',
+        'cache-control': 'no-cache',
+        'cookie': 'machine_cookie=5356356749135',
+        'pragma': 'no-cache',
+        'referer': f'{original_url}',
+        'sec-fetch-dest': 'empty',
+        'sec-fetch-mode': 'cors',
+        'sec-fetch-site': 'same-origin',
+        'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:52.0) Gecko/20100101 Firefox/52.0',
+    }
+    data = requests.get(url, headers=headers).json()
+    return data
