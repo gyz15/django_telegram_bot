@@ -47,6 +47,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'bot.apps.BotConfig',
+    'excel_api.apps.ExcelApiConfig',
+    'rest_framework',
 
 ]
 
