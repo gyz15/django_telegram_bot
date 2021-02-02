@@ -37,3 +37,9 @@ class ApiUser(models.Model):
 
     def __str__(self):
         return f'{self.first_name}'
+
+    @property
+    def has_call(self):
+        if self.call_used_today + 1 > self.plan.api_per_day and self.plan.is_unlimited == False:
+            return False
+        return True
