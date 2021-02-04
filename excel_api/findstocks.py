@@ -110,7 +110,15 @@ def clean_data_data(raw_data):
 
 
 def clean_data_prices(raw_data):
-    pass
+    last = raw_data['data'][1]['attributes']['last']
+    change = raw_data['data'][1]['attributes']['change']
+    percent_change = raw_data['data'][1]['attributes']['percentChange']
+
+    return {
+        "last": last,
+        "change": change,
+        "percent_change": percent_change,
+    }
 
 
 def fetch_from_sa_prices(symbol):
@@ -126,7 +134,9 @@ def fetch_from_sa_prices(symbol):
         'upgrade-insecure-requests': '1',
         'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36',
     }
-    data = request.get(
+    raw_data = request.get(
         f"https://finance.api.seekingalpha.com/v2/real-time-prices?symbols={symbol}", headers=headers).json()
-    final_data = clean_data_prices(data)
+    if "errors" in raw_data:
+        return {"Error": raw_data['errors'][0]['detail']}
+    final_data = clean_data_prices(raw_data)
     return final_data
