@@ -4,7 +4,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from .models import ApiUser, Plan
 from .utils import is_valid_key
-from .findstocks import find_stocks
+from .findstocks import find_stock
 
 # Create your views here.
 
@@ -16,8 +16,8 @@ class FindStocks(APIView):
             valid, user_obj = is_valid_key(request.headers['API-Key'])
             if valid:
                 if user_obj.has_call:
-                    stock_response = find_stocks(
-                        request.headers['Stocks'], user_obj)
+                    stock_response = find_stock(
+                        request.headers['Stock'], user_obj)
                     if "Error" in stock_response.keys():
                         return Response(stock_response, status=status.HTTP_400_BAD_REQUEST)
                     return Response(stock_response, status=status.HTTP_200_OK)
