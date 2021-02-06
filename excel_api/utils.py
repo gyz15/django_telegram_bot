@@ -9,3 +9,7 @@ def is_valid_key(key):
         return False, None
 
 
+def change_percent(value):
+    if value is not None or value is not "NM":
+        return value/100
+    return value

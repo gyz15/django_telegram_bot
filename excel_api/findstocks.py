@@ -55,16 +55,22 @@ def clean_data_data(raw_data):
     name = raw_data['data'][0]['attributes']['name']
     company = raw_data['data'][0]['attributes']['company']
     longdesc = raw_data['data'][0]['attributes']['longDesc']
-    revenuegrowth = raw_data['data'][0]['attributes']['revenueGrowth']
-    revenuegrowth3 = raw_data['data'][0]['attributes']['revenueGrowth3']
-    earningsgrowth = raw_data['data'][0]['attributes']['earningsGrowth']
-    earningsgrowth3 = raw_data['data'][0]['attributes']['earningsGrowth3']
-    divYield = raw_data['data'][0]['attributes']['divYield']
-    divYield4y = raw_data['data'][0]['attributes']['divYield4y']
+    revenuegrowth = change_percent(
+        raw_data['data'][0]['attributes']['revenueGrowth'])
+    revenuegrowth3 = change_percent(
+        raw_data['data'][0]['attributes']['revenueGrowth3'])
+    earningsgrowth = change_percent(
+        raw_data['data'][0]['attributes']['earningsGrowth'])
+    earningsgrowth3 = change_percent(
+        raw_data['data'][0]['attributes']['earningsGrowth3'])
+    divYield = change_percent(raw_data['data'][0]['attributes']['divYield'])
+    divYield4y = change_percent(
+        raw_data['data'][0]['attributes']['divYield4y'])
     dividendconsistency = raw_data['data'][0]['attributes']['dividendConsistency']
     dividendgrowth = raw_data['data'][0]['attributes']['dividendGrowth']
-    payoutratio = raw_data['data'][0]['attributes']['payoutRatio']
-    payout4y = raw_data['data'][0]['attributes']['payout4y']
+    payoutratio = change_percent(
+        raw_data['data'][0]['attributes']['payoutRatio'])
+    payout4y = change_percent(raw_data['data'][0]['attributes']['payout4y'])
     peratiofwd = raw_data['data'][0]['attributes']['peRatioFwd']
     trailingpe = raw_data['data'][0]['attributes']['trailingPe']
     pegratio = raw_data['data'][0]['attributes']['pegRatio']
@@ -74,9 +80,10 @@ def clean_data_data(raw_data):
     fcfshare = raw_data['data'][0]['attributes']['fcfShare']
     curratio = raw_data['data'][0]['attributes']['curRatio']
     quickratio = raw_data['data'][0]['attributes']['quickRatio']
-    grossmargin = raw_data['data'][0]['attributes']['grossMargin']
-    roe = raw_data['data'][0]['attributes']['roe']
-    roa = raw_data['data'][0]['attributes']['roa']
+    grossmargin = change_percent(
+        raw_data['data'][0]['attributes']['grossMargin'])
+    roe = change_percent(raw_data['data'][0]['attributes']['roe'])
+    roa = change_percent(raw_data['data'][0]['attributes']['roa'])
     d = {
         "symbol": name,
         "company_name": company,
@@ -114,7 +121,8 @@ def clean_data_data(raw_data):
 def clean_data_prices(raw_data):
     last = raw_data['data'][0]['attributes']['last']
     change = raw_data['data'][0]['attributes']['change']
-    percent_change = raw_data['data'][0]['attributes']['percentChange']
+    percent_change = change_percent(
+        raw_data['data'][0]['attributes']['percentChange'])
 
     return {
         "last": last,
