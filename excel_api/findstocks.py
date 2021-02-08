@@ -1,5 +1,6 @@
 # TODO a function that can fetch data and process it into json object
 import requests
+from .utils import change_percent
 
 
 def is_valid_stock(symbol):
@@ -103,13 +104,13 @@ def clean_data_data(raw_data):
         "peg_ratio": pegratio,
         "p_b_ratio": pricebook,
         "p_s_ratio": pricesales,
-        "e_p_s": eps,
+        "_eps": eps,
         "fcf_share": fcfshare,
         "cur_ratio": curratio,
         "quick_ratio": quickratio,
         "gross_margin": grossmargin,
-        "roe": roe,
-        "roa": roa,
+        "_roe": roe,
+        "_roa": roa,
     }
     for key, val in d.items():
         if val == None:
