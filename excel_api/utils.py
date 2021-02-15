@@ -10,6 +10,8 @@ def is_valid_key(key):
 
 
 def change_percent(value):
-    if value is not None or value is not "NM":
-        return value/100
-    return value
+    if value == None or value == "NM":
+        return value
+    print(type(value))
+    print(value)
+    return value/100
